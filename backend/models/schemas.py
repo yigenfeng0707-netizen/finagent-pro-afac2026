@@ -144,9 +144,9 @@ class AlertInfo(BaseModel):
     """预警信息"""
     alert_id: str
     alert_type: str  # price/risk/news/compliance
-    severity: RiskLevel
+    severity: str = "medium"  # 改为str，避免枚举验证问题
     title: str
-    message: str
+    message: str = ""  # 添加默认值
     symbol: Optional[str] = None
     timestamp: datetime = Field(default_factory=datetime.now)
     action_suggested: Optional[str] = None

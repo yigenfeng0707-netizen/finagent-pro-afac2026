@@ -12,7 +12,7 @@ const api = axios.create({
 })
 
 // 股票分析
-export const analyzeStock = (data) => api.post('/analyze', data)
+export const analyzeStock = (data) => api.post('/analyze', data, { timeout: 120000 })
 export const getStockData = (symbol) => api.get(`/stock/${symbol}`)
 export const getChartData = (symbol, period = '6mo') => api.get(`/stock/${symbol}/chart`, { params: { period } })
 export const getMarketOverview = () => api.get('/market/overview')

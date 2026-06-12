@@ -10,6 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 GLM_API_KEY = os.getenv("GLM_API_KEY", "")  # GLM-5.1
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 SENSENOVA_API_KEY = os.getenv("SENSENOVA_API_KEY", "")  # 商汤日日新
+DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY", "")  # 阿里云DashScope
 TUSHARE_TOKEN = os.getenv("TUSHARE_TOKEN", "")
 NEWSAPI_KEY = os.getenv("NEWSAPI_KEY", "")
 
@@ -34,6 +35,11 @@ DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-pro")
 SENSENOVA_API_KEY = os.getenv("SENSENOVA_API_KEY", "")
 SENSENOVA_BASE_URL = os.getenv("SENSENOVA_BASE_URL", "https://token.sensenova.cn/v1")
 SENSENOVA_MODEL = os.getenv("SENSENOVA_MODEL", "sensenova-6.7-flash-lite")
+
+# DashScope (阿里云百炼，Primary Model)
+DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY", "")
+DASHSCOPE_BASE_URL = os.getenv("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+DASHSCOPE_MODEL = os.getenv("DASHSCOPE_MODEL", "qwen-plus")  # 使用标准模型名称
 
 # Database
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR}/finagent.db")

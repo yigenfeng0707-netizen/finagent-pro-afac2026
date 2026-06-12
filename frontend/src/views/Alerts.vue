@@ -1,6 +1,9 @@
 <template>
   <div class="p-6 space-y-6">
     <h1 class="text-2xl font-bold text-white">预警中心</h1>
+    <div v-if="errorMsg" class="card border border-danger/50">
+      <p class="text-danger text-sm">❌ {{ errorMsg }}</p>
+    </div>
     <div class="space-y-3">
       <div v-for="alert in alerts" :key="alert.alert_id" class="card flex items-start gap-3" :class="severityBorder(alert.severity)">
         <span class="text-xl">{{ alert.severity === 'critical' ? '🔴' : alert.severity === 'high' ? '🟠' : alert.severity === 'medium' ? '🟡' : '🔵' }}</span>
@@ -23,9 +26,15 @@ import { ref, onMounted } from 'vue'
 import { getAlerts } from '../api'
 
 const alerts = ref([])
+const errorMsg = ref('')
 
 onMounted(async () => {
-  try { const { data } = await getAlerts(50); alerts.value = data } catch {}
+  try {
+    const { data } = await getAlerts(50)
+    alerts.value = data
+  } catch (e) {
+    errorMsg.value = '获取预警列表失败: ' + (e?.message || '未知错误')
+  }
 })
 
 function severityBorder(s) { return { low: 'border-info/30', medium: 'border-warning/30', high: 'border-danger/30', critical: 'border-danger/50' }[s] || '' }

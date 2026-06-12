@@ -17,6 +17,11 @@
       </div>
     </div>
 
+    <!-- 错误提示 -->
+    <div v-if="errorMsg" class="card border border-danger/50">
+      <p class="text-danger text-sm">❌ {{ errorMsg }}</p>
+    </div>
+
     <!-- 分析结果 -->
     <div v-if="result" class="space-y-4">
       <!-- 核心指标 -->
@@ -63,11 +68,17 @@ const includeRisk = ref(true)
 const includeStrategy = ref(false)
 const isAnalyzing = ref(false)
 const result = ref(null)
+const errorMsg = ref('')
 
 async function analyze() {
   if (!symbol.value) return
   isAnalyzing.value = true
-  try { result.value = await store.analyze(symbol.value, { analysisType: analysisType.value, includeNews: includeNews.value, includeRisk: includeRisk.value, includeStrategy: includeStrategy.value }) } catch {}
+  errorMsg.value = ''
+  try {
+    result.value = await store.analyze(symbol.value, { analysisType: analysisType.value, includeNews: includeNews.value, includeRisk: includeRisk.value, includeStrategy: includeStrategy.value })
+  } catch (e) {
+    errorMsg.value = e?.response?.data?.detail || e?.message || '分析失败，请稍后重试'
+  }
   isAnalyzing.value = false
 }
 </script>

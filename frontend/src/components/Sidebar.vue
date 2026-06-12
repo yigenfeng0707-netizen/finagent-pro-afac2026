@@ -35,6 +35,9 @@
 </template>
 
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
+import { getAgentStatus } from '../api'
+
 const navItems = [
   { path: '/', icon: '📊', label: '工作台' },
   { path: '/analyze', icon: '🔍', label: '股票分析' },
@@ -44,12 +47,44 @@ const navItems = [
   { path: '/alerts', icon: '🔔', label: '预警中心' },
 ]
 
-const agents = [
+const agentNameMap = {
+  market: '市场分析',
+  news: '新闻舆情',
+  risk: '风控合规',
+  strategy: '投资策略',
+  report: '报告生成',
+  execution: '执行监控',
+}
+
+const agents = ref([
   { name: '市场分析', running: false },
   { name: '新闻舆情', running: false },
   { name: '风控合规', running: false },
   { name: '投资策略', running: false },
   { name: '报告生成', running: false },
   { name: '执行监控', running: false },
-]
+])
+
+let statusTimer = null
+
+async function fetchStatus() {
+  try {
+    const { data } = await getAgentStatus()
+    if (data && typeof data === 'object') {
+      agents.value = Object.entries(data).map(([key, status]) => ({
+        name: status.name || agentNameMap[key] || key,
+        running: status.execution_count > 0,
+      }))
+    }
+  } catch {}
+}
+
+onMounted(() => {
+  fetchStatus()
+  statusTimer = setInterval(fetchStatus, 30000)
+})
+
+onUnmounted(() => {
+  if (statusTimer) clearInterval(statusTimer)
+})
 </script>

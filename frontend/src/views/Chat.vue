@@ -44,6 +44,10 @@ async function send() {
   if (!inputText.value.trim() || isLoading.value) return
   const text = inputText.value
   inputText.value = ''
-  await chatStore.sendMessage(text)
+  try {
+    await chatStore.sendMessage(text)
+  } catch (e) {
+    chatStore.messages.push({ role: 'assistant', content: '抱歉，发送消息时出现错误，请稍后再试。', timestamp: new Date().toISOString() })
+  }
 }
 </script>

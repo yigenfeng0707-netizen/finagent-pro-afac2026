@@ -34,6 +34,7 @@
           {{ isAnalyzing ? '分析中...' : '开始分析' }}
         </button>
       </div>
+      <div v-if="errorMsg" class="mt-3 text-danger text-sm">❌ {{ errorMsg }}</div>
     </div>
 
     <!-- 双栏：智能体状态 + 最近预警 -->
@@ -44,7 +45,7 @@
         <div class="space-y-2">
           <div v-for="(status, name) in agentStatus" :key="name" class="flex items-center justify-between py-2 border-b border-dark-700 last:border-0">
             <div class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full" :class="status.is_running ? 'bg-success animate-pulse' : 'bg-dark-500'"></span>
+              <span class="w-2 h-2 rounded-full" :class="status.execution_count > 0 ? 'bg-success animate-pulse' : 'bg-dark-500'"></span>
               <span class="text-sm">{{ status.name }}</span>
             </div>
             <div class="text-xs text-dark-400">
@@ -119,6 +120,7 @@ const marketIndices = ref([
 const agentStatus = ref({})
 const recentAlerts = ref([])
 const currentAnalysis = ref(null)
+const errorMsg = ref('')
 
 onMounted(async () => {
   // 更新时间
@@ -128,28 +130,37 @@ onMounted(async () => {
   try {
     const { data } = await getMarketOverview()
     if (data.indices?.length) marketIndices.value = data.indices
-  } catch {}
+  } catch (e) {
+    console.warn('获取市场数据失败:', e?.message)
+  }
 
   // 获取智能体状态
   try {
     await store.fetchAgentStatus()
     agentStatus.value = store.agentStatus
-  } catch {}
+  } catch (e) {
+    console.warn('获取智能体状态失败:', e?.message)
+  }
 
   // 获取预警
   try {
     const { data } = await getAlerts(5)
     recentAlerts.value = data
-  } catch {}
+  } catch (e) {
+    console.warn('获取预警失败:', e?.message)
+  }
 })
 
 async function quickAnalyze() {
   if (!quickSymbol.value || isAnalyzing.value) return
   isAnalyzing.value = true
+  errorMsg.value = ''
   try {
     const result = await store.analyze(quickSymbol.value)
     currentAnalysis.value = result
-  } catch {}
+  } catch (e) {
+    errorMsg.value = e?.response?.data?.detail || e?.message || '分析失败，请稍后重试'
+  }
   isAnalyzing.value = false
 }
 

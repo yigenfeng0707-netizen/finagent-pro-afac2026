@@ -68,7 +68,14 @@ class ExecutionAgent(BaseAgent):
             stock = await market_data_service.get_stock_data(symbol)
             change = stock.get("change_percent", 0)
             if change < -5:
-                alert = {"alert_id": str(uuid.uuid4())[:8], "alert_type": "price", "severity": "high", "title": f"{symbol}大跌{change:.2f}%", "symbol": symbol}
+                alert = {
+                    "alert_id": str(uuid.uuid4())[:8],
+                    "alert_type": "price",
+                    "severity": "high",
+                    "title": f"{symbol}大跌{change:.2f}%",
+                    "message": f"{symbol}当前跌幅{change:.2f}%，超过5%阈值",
+                    "symbol": symbol
+                }
                 alerts.append(alert)
                 await db_service.save_alert(alert)
                 await ws_manager.send_alert(alert)
@@ -90,7 +97,14 @@ class ExecutionAgent(BaseAgent):
         triggered = change >= threshold * 100
 
         if triggered:
-            alert = {"alert_id": str(uuid.uuid4())[:8], "alert_type": "price", "severity": "high", "title": f"{symbol}价格波动{change:.2f}%", "symbol": symbol}
+            alert = {
+                "alert_id": str(uuid.uuid4())[:8],
+                "alert_type": "price",
+                "severity": "high",
+                "title": f"{symbol}价格波动{change:.2f}%",
+                "message": f"{symbol}价格波动{change:.2f}%，超过阈值{threshold*100:.0f}%",
+                "symbol": symbol
+            }
             await db_service.save_alert(alert)
             await ws_manager.send_alert(alert)
 

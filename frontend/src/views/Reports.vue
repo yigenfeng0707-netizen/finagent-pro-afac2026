@@ -4,6 +4,9 @@
       <h1 class="text-2xl font-bold text-white">报告中心</h1>
       <button @click="showGenerate = true" class="btn-primary">生成报告</button>
     </div>
+    <div v-if="errorMsg" class="card border border-danger/50">
+      <p class="text-danger text-sm">❌ {{ errorMsg }}</p>
+    </div>
     <div class="grid grid-cols-2 gap-4">
       <div v-for="report in reports" :key="report.report_id" class="card">
         <div class="flex items-center justify-between mb-2">
@@ -44,14 +47,27 @@ const showGenerate = ref(false)
 const genType = ref('morning_daily')
 const genSymbol = ref('')
 const generating = ref(false)
+const errorMsg = ref('')
 
 onMounted(async () => {
-  try { const { data } = await getReports(); reports.value = data } catch {}
+  try {
+    const { data } = await getReports()
+    reports.value = data
+  } catch (e) {
+    errorMsg.value = '获取报告列表失败: ' + (e?.message || '未知错误')
+  }
 })
 
 async function generate() {
   generating.value = true
-  try { const { data } = await generateReport(genType.value, genSymbol.value || undefined); reports.value.unshift(data); showGenerate.value = false } catch {}
+  errorMsg.value = ''
+  try {
+    const { data } = await generateReport(genType.value, genSymbol.value || undefined)
+    reports.value.unshift(data)
+    showGenerate.value = false
+  } catch (e) {
+    errorMsg.value = '生成报告失败: ' + (e?.message || '未知错误')
+  }
   generating.value = false
 }
 

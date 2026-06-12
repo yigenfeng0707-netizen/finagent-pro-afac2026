@@ -122,8 +122,8 @@ class AgentOrchestrator:
                 risk_input = {
                     "symbol": symbol,
                     "stock_data": stock_data,
-                    "technical_data": agent_results.get("market", AgentResult(agent_name="", agent_type="")).model_dump(),
-                    "sentiment_data": agent_results.get("news", AgentResult(agent_name="", agent_type="")).model_dump(),
+                    "technical_data": agent_results.get("market", AgentResult(agent_name="", agent_type="")).model_dump(mode="json"),
+                    "sentiment_data": agent_results.get("news", AgentResult(agent_name="", agent_type="")).model_dump(mode="json"),
                 }
                 risk_result = await self.agents["risk"].execute(risk_input)
                 agent_results["risk"] = self._map_agent_result(risk_result)
@@ -134,9 +134,9 @@ class AgentOrchestrator:
                 strategy_input = {
                     "symbol": symbol,
                     "stock_data": stock_data,
-                    "market_result": agent_results.get("market", AgentResult(agent_name="", agent_type="")).model_dump(),
-                    "news_result": agent_results.get("news", AgentResult(agent_name="", agent_type="")).model_dump(),
-                    "risk_result": agent_results.get("risk", AgentResult(agent_name="", agent_type="")).model_dump(),
+                    "market_result": agent_results.get("market", AgentResult(agent_name="", agent_type="")).model_dump(mode="json"),
+                    "news_result": agent_results.get("news", AgentResult(agent_name="", agent_type="")).model_dump(mode="json"),
+                    "risk_result": agent_results.get("risk", AgentResult(agent_name="", agent_type="")).model_dump(mode="json"),
                 }
                 strategy_result = await self.agents["strategy"].execute(strategy_input)
                 agent_results["strategy"] = self._map_agent_result(strategy_result)
@@ -162,14 +162,14 @@ class AgentOrchestrator:
                 "symbol": symbol,
                 "company_name": stock_data.get("name", ""),
                 "current_price": stock_data.get("current_price"),
-                "recommendation": recommendation.model_dump(),
-                "agent_results": {k: v.model_dump() for k, v in agent_results.items()},
+                "recommendation": recommendation.model_dump(mode="json"),
+                "agent_results": {k: v.model_dump(mode="json") for k, v in agent_results.items()},
                 "processing_time": round(processing_time, 2),
             })
         except Exception as e:
             logger.warning(f"保存分析记录失败: {e}")
 
-        await ws_manager.send_analysis_complete(symbol, {"recommendation": recommendation.model_dump()})
+        await ws_manager.send_analysis_complete(symbol, {"recommendation": recommendation.model_dump(mode="json")})
 
         return AnalysisResponse(
             request_id=request_id,
@@ -180,7 +180,7 @@ class AgentOrchestrator:
             recommendation=recommendation,
             agent_results=agent_results,
             processing_time=round(processing_time, 2),
-        ).model_dump()
+        ).model_dump(mode="json")
 
     async def chat(self, message: str, conversation_id: str = None, context: Dict = None) -> ChatResponse:
         """对话式交互"""
@@ -295,8 +295,15 @@ class AgentOrchestrator:
         # 风险评估
         risk_result = agent_results.get("risk")
         if risk_result:
+            risk_level_str = risk_result.metadata.get("overall_risk", "medium") if risk_result.metadata else "medium"
+            # 将字符串转换为RiskLevel枚举
+            try:
+                from models.schemas import RiskLevel
+                risk_level_enum = RiskLevel(risk_level_str)
+            except ValueError:
+                risk_level_enum = RiskLevel.MEDIUM
             risk_assessment = RiskAssessment(
-                overall_risk=risk_result.metadata.get("overall_risk", "medium") if risk_result.metadata else "medium",
+                overall_risk=risk_level_enum,
                 risk_score=risk_result.metadata.get("risk_score", 0.5) if risk_result.metadata else 0.5,
             )
 

@@ -1,6 +1,7 @@
 """
 数据库服务
 支持SQLite(开发)和PostgreSQL(生产)
+内存存储为主，数据库为可选持久化
 """
 import logging
 from typing import Any, Dict, List, Optional
@@ -14,6 +15,7 @@ class DatabaseService:
 
     def __init__(self):
         self._initialized = False
+        self._engine = None
 
     async def _ensure_init(self):
         """确保数据库已初始化"""
@@ -22,23 +24,37 @@ class DatabaseService:
             self._initialized = True
 
     async def _init_db(self):
-        """初始化数据库表"""
+        """初始化数据库（可选，失败不影响运行）"""
         try:
             from config import DATABASE_URL
             import sqlalchemy as sa
-            engine = sa.create_async_engine(DATABASE_URL)
-            async with engine.begin() as conn:
-                await conn.run_sync(self._create_tables)
-            logger.info("数据库初始化完成")
+            # SQLite需要用同步引擎
+            url = DATABASE_URL
+            if url.startswith("sqlite:///") and "+aiosqlite" not in url:
+                url = url.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
+            try:
+                engine = sa.create_async_engine(url)
+                async with engine.begin() as conn:
+                    await conn.run_sync(self._create_tables_sync)
+                self._engine = engine
+                logger.info("数据库初始化完成")
+            except Exception as e1:
+                # 异步引擎失败，尝试同步
+                sync_url = DATABASE_URL.replace("+aiosqlite", "")
+                engine = sa.create_engine(sync_url)
+                self._create_tables_sync(engine)
+                self._engine = engine
+                logger.info("数据库初始化完成(同步模式)")
         except Exception as e:
             logger.warning(f"数据库初始化失败: {e}，将使用内存存储")
 
     @staticmethod
-    def _create_tables(engine):
+    def _create_tables_sync(engine):
         """创建数据表"""
+        import sqlalchemy as sa
         metadata = sa.MetaData()
         sa.Table("analyses", metadata,
-            sa.Column("id", sa.Integer, primary_key=True),
+            sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
             sa.Column("symbol", sa.String(20)),
             sa.Column("company_name", sa.String(200)),
             sa.Column("current_price", sa.Float),
@@ -48,7 +64,7 @@ class DatabaseService:
             sa.Column("created_at", sa.DateTime, default=datetime.now),
         )
         sa.Table("audit_log", metadata,
-            sa.Column("id", sa.Integer, primary_key=True),
+            sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
             sa.Column("timestamp", sa.DateTime),
             sa.Column("method", sa.String(10)),
             sa.Column("path", sa.String(500)),
@@ -57,7 +73,7 @@ class DatabaseService:
             sa.Column("processing_time", sa.Float),
         )
         sa.Table("alerts", metadata,
-            sa.Column("id", sa.Integer, primary_key=True),
+            sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
             sa.Column("alert_type", sa.String(50)),
             sa.Column("severity", sa.String(20)),
             sa.Column("title", sa.String(500)),
@@ -66,7 +82,7 @@ class DatabaseService:
             sa.Column("timestamp", sa.DateTime, default=datetime.now),
         )
         sa.Table("reports", metadata,
-            sa.Column("id", sa.Integer, primary_key=True),
+            sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
             sa.Column("report_type", sa.String(50)),
             sa.Column("title", sa.String(500)),
             sa.Column("content", sa.Text),

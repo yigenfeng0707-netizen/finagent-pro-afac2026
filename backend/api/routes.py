@@ -22,7 +22,7 @@ async def health_check():
 
 # ===== 股票分析 =====
 
-@router.post("/analyze", response_model=AnalysisResponse, summary="综合分析股票")
+@router.post("/analyze")
 async def analyze_stock(request: AnalysisRequest):
     """对指定股票进行多智能体综合分析"""
     from agents.orchestrator import orchestrator
@@ -85,7 +85,7 @@ async def analyze_portfolio(request: PortfolioRequest):
 
 # ===== 预警系统 =====
 
-@router.get("/alerts", response_model=list[AlertInfo], summary="获取预警列表")
+@router.get("/alerts", summary="获取预警列表")
 async def get_alerts(limit: int = 20):
     """获取最近的预警信息"""
     from services.database_service import db_service
@@ -94,7 +94,7 @@ async def get_alerts(limit: int = 20):
 
 # ===== 报告系统 =====
 
-@router.get("/reports", response_model=list[ReportInfo], summary="获取报告列表")
+@router.get("/reports", summary="获取报告列表")
 async def get_reports(report_type: str = None, limit: int = 20):
     """获取生成的报告列表"""
     from services.database_service import db_service

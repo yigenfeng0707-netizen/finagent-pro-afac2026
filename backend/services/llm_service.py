@@ -1,6 +1,6 @@
 """
 统一LLM服务
-支持GLM-5.1(智谱AI)、DeepSeek-v4-pro、SenseNova(商汤日日新)，自动降级和重试
+支持DashScope(阿里云百炼)、GLM-5.1、DeepSeek-v4-pro、SenseNova，自动降级和重试
 """
 import asyncio
 import json
@@ -8,6 +8,7 @@ import logging
 from typing import Optional
 
 from config import (
+    DASHSCOPE_API_KEY, DASHSCOPE_BASE_URL, DASHSCOPE_MODEL,
     GLM_API_KEY, GLM_BASE_URL, GLM_MODEL,
     DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL,
     SENSENOVA_API_KEY, SENSENOVA_BASE_URL, SENSENOVA_MODEL,
@@ -18,9 +19,10 @@ logger = logging.getLogger(__name__)
 
 
 class LLMService:
-    """统一LLM服务 - 三模型自动降级：GLM-5.1 → DeepSeek-v4-pro → SenseNova"""
+    """统一LLM服务 - 四模型自动降级：DashScope → GLM-5.1 → DeepSeek → SenseNova"""
 
     def __init__(self):
+        self.dashscope_client = None
         self.glm_client = None
         self.deepseek_client = None
         self.sensenova_client = None
@@ -31,7 +33,24 @@ class LLMService:
         # 所有已初始化的提供商（用于降级）
         self._providers: list = []
 
-        # 1. 主力模型: GLM-5.1（智谱AI，中文能力强，金融场景优化）
+        # 0. Primary Model: DashScope (阿里云百炼)
+        if LLM_ENABLED and DASHSCOPE_API_KEY:
+            try:
+                from openai import AsyncOpenAI
+                self.dashscope_client = AsyncOpenAI(
+                    api_key=DASHSCOPE_API_KEY,
+                    base_url=DASHSCOPE_BASE_URL,
+                )
+                self._providers.append(("dashscope", self.dashscope_client, DASHSCOPE_MODEL))
+                if not self.available:
+                    self.provider = "dashscope"
+                    self.default_model = DASHSCOPE_MODEL
+                    self.available = True
+                logger.info(f"LLM初始化: DashScope ({DASHSCOPE_MODEL}) @ {DASHSCOPE_BASE_URL}")
+            except Exception as e:
+                logger.warning(f"DashScope初始化失败: {e}")
+
+        # 1. 备选模型: GLM-5.1（智谱AI）
         if LLM_ENABLED and GLM_API_KEY:
             try:
                 from openai import AsyncOpenAI
@@ -48,7 +67,7 @@ class LLMService:
             except Exception as e:
                 logger.warning(f"GLM-5.1初始化失败: {e}")
 
-        # 2. 备选模型: DeepSeek-v4-pro（深度推理能力强）
+        # 2. 备选模型: DeepSeek-v4-pro
         if LLM_ENABLED and DEEPSEEK_API_KEY:
             try:
                 from openai import AsyncOpenAI
@@ -65,7 +84,7 @@ class LLMService:
             except Exception as e:
                 logger.warning(f"DeepSeek初始化失败: {e}")
 
-        # 3. 轻量模型: SenseNova（商汤日日新，快速响应，适合简单任务）
+        # 3. 轻量模型: SenseNova
         if LLM_ENABLED and SENSENOVA_API_KEY:
             try:
                 from openai import AsyncOpenAI
