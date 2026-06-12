@@ -28,7 +28,7 @@ API网关层:   FastAPI + WebSocket + SSE
     ↕
 推理框架层:  ReAct引擎 + Tool系统 + Memory系统
     ↕
-基础服务层:  LLM服务(通义千问/DeepSeek/OpenAI) + AKShare + 数据库
+基础服务层:  LLM服务(GLM-5.1/DeepSeek/SenseNova) + AKShare + 数据库
 ```
 
 ## 快速开始
@@ -84,7 +84,7 @@ docker-compose up -d
 |------|------|
 | 后端 | Python 3.12 + FastAPI + LangChain |
 | 智能体 | ReAct推理 + Tool调用 + 持久记忆 |
-| LLM | 通义千问(Qwen) / DeepSeek / OpenAI |
+| LLM | GLM-5.1 (智谱AI) / DeepSeek-v4-pro / SenseNova (商汤) |
 | 数据源 | AKShare + Tushare + 东方财富 |
 | 前端 | Vue3 + TailwindCSS + TradingView |
 | 数据库 | SQLite / PostgreSQL |
