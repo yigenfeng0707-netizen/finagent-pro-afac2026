@@ -56,11 +56,13 @@ app.add_middleware(ComplianceAuditMiddleware)
 # 路由
 app.include_router(router, prefix="/api")
 
-# 静态文件
-try:
-    app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
-except Exception:
-    pass
+# 静态文件（仅本地开发时挂载，Render部署不需要）
+import os
+if os.path.exists("frontend/dist"):
+    try:
+        app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":
