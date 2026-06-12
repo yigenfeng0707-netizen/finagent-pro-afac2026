@@ -184,9 +184,6 @@ class AgentOrchestrator:
 
     async def chat(self, message: str, conversation_id: str = None, context: Dict = None) -> ChatResponse:
         """对话式交互"""
-        if not llm_service.is_available():
-            return ChatResponse(response="抱歉，LLM服务暂不可用，请稍后再试。")
-
         # 判断用户意图
         intent = await self._classify_intent(message)
 
@@ -194,25 +191,34 @@ class AgentOrchestrator:
             # 提取股票代码
             symbol = self._extract_symbol(message)
             if symbol:
-                result = await self.analyze_stock(symbol)
-                rec = result.get("recommendation", {})
-                response_text = f"📊 {symbol} 分析完成！\n\n"
-                response_text += f"建议: {rec.get('signal', 'hold')}\n"
-                response_text += f"置信度: {rec.get('confidence', 0.5):.0%}\n"
-                response_text += f"理由: {rec.get('reasoning', '暂无')[:300]}\n"
-                if rec.get('risk_assessment'):
-                    response_text += f"风险等级: {rec['risk_assessment'].get('overall_risk', 'unknown')}"
-                return ChatResponse(response=response_text, related_stocks=[symbol])
+                try:
+                    result = await self.analyze_stock(symbol)
+                    rec = result.get("recommendation", {})
+                    response_text = f"📊 {symbol} 分析完成！\n\n"
+                    response_text += f"建议: {rec.get('signal', 'hold')}\n"
+                    response_text += f"置信度: {rec.get('confidence', 0.5):.0%}\n"
+                    response_text += f"理由: {rec.get('reasoning', '暂无')[:300]}\n"
+                    if rec.get('risk_assessment'):
+                        response_text += f"风险等级: {rec['risk_assessment'].get('overall_risk', 'unknown')}"
+                    return ChatResponse(response=response_text, related_stocks=[symbol])
+                except Exception as e:
+                    logger.warning(f"分析股票失败，使用规则引擎兜底: {e}")
+                    return ChatResponse(response=self._rule_based_fallback(message, symbol))
 
-        # 通用对话
+        # 通用对话 - 先尝试LLM，失败则用规则引擎兜底
         try:
-            response_text = await llm_service.generate(
-                system_prompt="你是FinAgent Pro金融数字员工，专业、友好、准确。用中文回答金融相关问题。",
-                user_prompt=message,
-            )
-            return ChatResponse(response=response_text or "暂无法回答，请稍后再试。")
+            if llm_service.is_available():
+                response_text = await llm_service.generate(
+                    system_prompt="你是FinAgent Pro金融数字员工，专业、友好、准确。用中文回答金融相关问题。",
+                    user_prompt=message,
+                )
+                if response_text:
+                    return ChatResponse(response=response_text)
         except Exception as e:
-            return ChatResponse(response=f"处理您的问题时出现错误: {str(e)}")
+            logger.warning(f"LLM对话失败，使用规则引擎兜底: {e}")
+
+        # 规则引擎兜底
+        return ChatResponse(response=self._rule_based_fallback(message))
 
     async def _classify_intent(self, message: str) -> str:
         """分类用户意图"""
@@ -231,6 +237,54 @@ class AgentOrchestrator:
             return result.get("intent", "general")
         except:
             return "general"
+
+    def _rule_based_fallback(self, message: str, symbol: str = None) -> str:
+        """规则引擎兜底回复 - 当LLM不可用时根据消息内容生成回复"""
+        msg_lower = message.lower()
+
+        # 股票分析相关
+        if symbol:
+            return (
+                f"📊 {symbol} 快速参考:\n\n"
+                f"目前LLM服务暂不可用，无法提供深度分析。您可以:\n"
+                f"1. 稍后再试获取完整分析报告\n"
+                f"2. 在分析页面输入股票代码获取技术指标\n"
+                f"3. 查看市场概览了解大盘走势\n\n"
+                f"温馨提示: 投资有风险，决策需谨慎。"
+            )
+
+        # 市场概览
+        if any(kw in msg_lower for kw in ["市场", "大盘", "指数", "行情", "market"]):
+            return (
+                "📈 市场概览:\n\n"
+                "目前LLM服务暂不可用，无法获取实时市场解读。建议您:\n"
+                "1. 在市场概览页面查看主要指数走势\n"
+                "2. 关注上证指数、深证成指、创业板指\n"
+                "3. 稍后再试获取AI市场分析\n\n"
+                "温馨提示: 市场波动属正常现象，请理性看待。"
+            )
+
+        # 风险相关
+        if any(kw in msg_lower for kw in ["风险", "止损", "预警", "risk", "var"]):
+            return (
+                "⚠️ 风险提示:\n\n"
+                "目前LLM服务暂不可用，无法进行深度风险评估。基本风控建议:\n"
+                "1. 单只股票仓位不超过总资金的20%\n"
+                "2. 设置止损线，建议亏损5%-8%止损\n"
+                "3. 分散投资，避免集中持仓\n"
+                "4. 关注市场系统性风险\n\n"
+                "请在风控页面查看详细风险评估。"
+            )
+
+        # 通用兜底
+        return (
+            "您好！我是FinAgent Pro金融数字员工。\n\n"
+            "目前AI服务暂时不可用，但我仍然可以帮您:\n"
+            "1. 输入股票代码(如600519)进行技术分析\n"
+            "2. 查看市场概览和实时行情\n"
+            "3. 查看风险预警和持仓监控\n\n"
+            "请稍后再试，或使用上方功能页面获取服务。"
+        )
 
     def _extract_symbol(self, message: str) -> Optional[str]:
         """从消息中提取股票代码"""

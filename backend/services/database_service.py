@@ -109,6 +109,21 @@ class DatabaseService:
         self._memory_audit.append(data)
         if len(self._memory_audit) > 5000:
             self._memory_audit = self._memory_audit[-2000:]
+        # 持久化到数据库
+        try:
+            await self._ensure_init()
+            if self._engine is not None:
+                import sqlalchemy as sa
+                async with self._engine.begin() as conn:
+                    await conn.execute(
+                        sa.text(
+                            "INSERT INTO audit_log (timestamp, method, path, client_ip, status_code, processing_time) "
+                            "VALUES (:timestamp, :method, :path, :client_ip, :status_code, :processing_time)"
+                        ),
+                        data,
+                    )
+        except Exception as e:
+            logger.warning(f"审计日志持久化失败: {e}")
 
     async def save_alert(self, alert: Dict):
         """保存预警记录"""

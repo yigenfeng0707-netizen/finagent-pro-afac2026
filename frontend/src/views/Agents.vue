@@ -16,6 +16,7 @@
           <div class="text-dark-400">工具数</div><div class="text-dark-200">{{ status.tools?.length || 0 }}</div>
           <div class="text-dark-400">状态</div><div :class="status.is_running ? 'text-success' : 'text-dark-400'">{{ status.is_running ? '运行中' : '空闲' }}</div>
         </div>
+        <button @click="triggerAnalysis(name)" class="mt-3 w-full text-xs btn-primary py-1.5">触发分析</button>
       </div>
     </div>
   </div>
@@ -23,13 +24,28 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { getAgentStatus } from '../api'
 
 const agents = ref({})
+const router = useRouter()
 
 onMounted(async () => {
   try { const { data } = await getAgentStatus(); agents.value = data } catch {}
 })
+
+function triggerAnalysis(agentName) {
+  const symbolMap = {
+    market: '000001',
+    news: '000001',
+    risk: '000001',
+    strategy: '000001',
+    report: '000001',
+    execution: '000001',
+  }
+  const symbol = symbolMap[agentName] || ''
+  router.push({ path: '/analyze', query: { symbol } })
+}
 
 function agentIcon(name) {
   const icons = { market: { icon: '📈', bg: 'bg-success/20' }, news: { icon: '📰', bg: 'bg-info/20' }, risk: { icon: '🛡️', bg: 'bg-warning/20' }, strategy: { icon: '🎯', bg: 'bg-primary-500/20' }, report: { icon: '📄', bg: 'bg-dark-600' }, execution: { icon: '⚡', bg: 'bg-danger/20' } }

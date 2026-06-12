@@ -56,11 +56,13 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAnalysisStore } from '../stores/analysis'
 import SignalBadge from '../components/SignalBadge.vue'
 
 const store = useAnalysisStore()
+const route = useRoute()
 const symbol = ref('')
 const analysisType = ref('comprehensive')
 const includeNews = ref(true)
@@ -69,6 +71,12 @@ const includeStrategy = ref(false)
 const isAnalyzing = ref(false)
 const result = ref(null)
 const errorMsg = ref('')
+
+onMounted(() => {
+  if (route.query.symbol) {
+    symbol.value = route.query.symbol
+  }
+})
 
 async function analyze() {
   if (!symbol.value) return

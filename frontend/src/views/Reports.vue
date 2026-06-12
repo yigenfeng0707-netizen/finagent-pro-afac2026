@@ -14,7 +14,15 @@
           <span class="badge-info">{{ report.report_type }}</span>
         </div>
         <p class="text-xs text-dark-400 line-clamp-2">{{ report.summary }}</p>
-        <div class="text-xs text-dark-500 mt-2">{{ formatTime(report.created_at || report.generated_at) }}</div>
+        <div class="flex items-center justify-between mt-2">
+          <div class="text-xs text-dark-500">{{ formatTime(report.created_at || report.generated_at) }}</div>
+          <button @click="toggleReport(report.report_id)" class="text-xs text-primary-400 hover:text-primary-300">
+            {{ expandedReports[report.report_id] ? '收起 ▲' : '查看详情 ▼' }}
+          </button>
+        </div>
+        <div v-if="expandedReports[report.report_id] && report.content" class="mt-3 pt-3 border-t border-dark-600">
+          <div class="markdown-body text-sm text-dark-200" v-html="renderMarkdown(report.content)"></div>
+        </div>
       </div>
     </div>
     <!-- 生成对话框 -->
@@ -39,10 +47,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { getReports, generateReport } from '../api'
+import { marked } from 'marked'
 
 const reports = ref([])
+const expandedReports = reactive({})
 const showGenerate = ref(false)
 const genType = ref('morning_daily')
 const genSymbol = ref('')
@@ -71,5 +81,31 @@ async function generate() {
   generating.value = false
 }
 
+function toggleReport(id) {
+  expandedReports[id] = !expandedReports[id]
+}
+
+function renderMarkdown(text) {
+  if (!text) return ''
+  return marked.parse(text)
+}
+
 function formatTime(ts) { return ts ? new Date(ts).toLocaleString('zh-CN') : '' }
 </script>
+
+<style scoped>
+.markdown-body :deep(h1) { font-size: 1.25rem; font-weight: 700; margin: 0.5rem 0; }
+.markdown-body :deep(h2) { font-size: 1.125rem; font-weight: 700; margin: 0.5rem 0; }
+.markdown-body :deep(h3) { font-size: 1rem; font-weight: 600; margin: 0.4rem 0; }
+.markdown-body :deep(p) { margin: 0.3rem 0; }
+.markdown-body :deep(ul), .markdown-body :deep(ol) { padding-left: 1.25rem; margin: 0.3rem 0; }
+.markdown-body :deep(li) { margin: 0.15rem 0; }
+.markdown-body :deep(strong) { font-weight: 600; }
+.markdown-body :deep(code) { background: rgba(255,255,255,0.1); padding: 0.1rem 0.3rem; border-radius: 0.25rem; font-size: 0.85em; }
+.markdown-body :deep(pre) { background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 0.375rem; overflow-x: auto; margin: 0.4rem 0; }
+.markdown-body :deep(pre code) { background: none; padding: 0; }
+.markdown-body :deep(blockquote) { border-left: 3px solid rgba(255,255,255,0.3); padding-left: 0.75rem; margin: 0.4rem 0; color: rgba(255,255,255,0.7); }
+.markdown-body :deep(table) { border-collapse: collapse; margin: 0.4rem 0; width: 100%; }
+.markdown-body :deep(th), .markdown-body :deep(td) { border: 1px solid rgba(255,255,255,0.2); padding: 0.25rem 0.5rem; }
+.markdown-body :deep(th) { background: rgba(255,255,255,0.1); }
+</style>

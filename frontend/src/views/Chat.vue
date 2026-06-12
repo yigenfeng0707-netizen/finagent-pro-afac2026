@@ -10,7 +10,8 @@
       </div>
       <div v-for="(msg, i) in messages" :key="i" :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
         <div :class="msg.role === 'user' ? 'bg-primary-600 text-white rounded-xl rounded-br-sm' : 'bg-dark-800 text-dark-100 rounded-xl rounded-bl-sm'" class="max-w-2xl px-4 py-3">
-          <div class="text-sm whitespace-pre-wrap">{{ msg.content }}</div>
+          <div v-if="msg.role === 'user'" class="text-sm whitespace-pre-wrap">{{ msg.content }}</div>
+          <div v-else class="text-sm markdown-body" v-html="renderMarkdown(msg.content)"></div>
           <div v-if="msg.agentSteps?.length" class="mt-2 pt-2 border-t border-dark-600">
             <ThinkingChain :steps="msg.agentSteps" />
           </div>
@@ -34,11 +35,17 @@
 import { ref, computed } from 'vue'
 import { useChatStore } from '../stores/chat'
 import ThinkingChain from '../components/ThinkingChain.vue'
+import { marked } from 'marked'
 
 const chatStore = useChatStore()
 const inputText = ref('')
 const messages = computed(() => chatStore.messages)
 const isLoading = computed(() => chatStore.isLoading)
+
+function renderMarkdown(text) {
+  if (!text) return ''
+  return marked.parse(text)
+}
 
 async function send() {
   if (!inputText.value.trim() || isLoading.value) return
@@ -51,3 +58,20 @@ async function send() {
   }
 }
 </script>
+
+<style scoped>
+.markdown-body :deep(h1) { font-size: 1.25rem; font-weight: 700; margin: 0.5rem 0; }
+.markdown-body :deep(h2) { font-size: 1.125rem; font-weight: 700; margin: 0.5rem 0; }
+.markdown-body :deep(h3) { font-size: 1rem; font-weight: 600; margin: 0.4rem 0; }
+.markdown-body :deep(p) { margin: 0.3rem 0; }
+.markdown-body :deep(ul), .markdown-body :deep(ol) { padding-left: 1.25rem; margin: 0.3rem 0; }
+.markdown-body :deep(li) { margin: 0.15rem 0; }
+.markdown-body :deep(strong) { font-weight: 600; }
+.markdown-body :deep(code) { background: rgba(255,255,255,0.1); padding: 0.1rem 0.3rem; border-radius: 0.25rem; font-size: 0.85em; }
+.markdown-body :deep(pre) { background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 0.375rem; overflow-x: auto; margin: 0.4rem 0; }
+.markdown-body :deep(pre code) { background: none; padding: 0; }
+.markdown-body :deep(blockquote) { border-left: 3px solid rgba(255,255,255,0.3); padding-left: 0.75rem; margin: 0.4rem 0; color: rgba(255,255,255,0.7); }
+.markdown-body :deep(table) { border-collapse: collapse; margin: 0.4rem 0; width: 100%; }
+.markdown-body :deep(th), .markdown-body :deep(td) { border: 1px solid rgba(255,255,255,0.2); padding: 0.25rem 0.5rem; }
+.markdown-body :deep(th) { background: rgba(255,255,255,0.1); }
+</style>

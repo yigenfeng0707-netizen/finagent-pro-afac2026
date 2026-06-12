@@ -15,6 +15,7 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
         self.requests = defaultdict(list)
+        self._cleanup_counter = 0
 
     async def dispatch(self, request: Request, call_next):
         # 跳过WebSocket和静态文件
@@ -28,6 +29,14 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
         self.requests[client_ip] = [
             t for t in self.requests[client_ip] if now - t < 60
         ]
+
+        # 定期清理所有过期IP键，防止内存泄漏
+        self._cleanup_counter += 1
+        if self._cleanup_counter >= 100:
+            self._cleanup_counter = 0
+            stale_ips = [ip for ip, times in self.requests.items() if not times]
+            for ip in stale_ips:
+                del self.requests[ip]
 
         if len(self.requests[client_ip]) >= self.requests_per_minute:
             logger.warning(f"速率限制触发: {client_ip}")

@@ -91,10 +91,25 @@ class SchedulerService:
         try:
             from agents.execution_agent import ExecutionAgent
             agent = ExecutionAgent()
-            await agent.execute({"task_type": task["task_type"], **task.get("params", {})})
+            # 映射任务类型到ExecutionAgent支持的task_type
+            task_type = task["task_type"]
+            mapped_type = self._map_task_type(task_type)
+            await agent.execute({"task_type": mapped_type, **task.get("params", {})})
             task["last_run"] = datetime.now().isoformat()
         except Exception as e:
             logger.error(f"定时任务执行失败 [{task_id}]: {e}")
+
+    @staticmethod
+    def _map_task_type(task_type: str) -> str:
+        """将调度任务类型映射到ExecutionAgent.analyze()支持的task_type"""
+        task_type_map = {
+            "morning_report": "morning_scan",
+            "evening_report": "morning_scan",  # 收盘总结也使用巡检逻辑
+            "risk_scan": "risk_scan",
+            "price_alert": "price_alert",
+            "morning_scan": "morning_scan",
+        }
+        return task_type_map.get(task_type, task_type)
 
     def get_tasks(self) -> List[Dict]:
         return list(self._tasks.values())
