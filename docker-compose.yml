@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - LLM_PROVIDER=${LLM_PROVIDER:-glm}
+      - LLM_ENABLED=${LLM_ENABLED:-true}
+      - GLM_API_KEY=${GLM_API_KEY}
+      - GLM_BASE_URL=${GLM_BASE_URL:-https://api.edgefn.net/v1}
+      - GLM_MODEL=${GLM_MODEL:-GLM-5.1}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-v4-pro}
+      - SENSENOVA_API_KEY=${SENSENOVA_API_KEY}
+      - SENSENOVA_BASE_URL=${SENSENOVA_BASE_URL:-https://token.sensenova.cn/v1}
+      - SENSENOVA_MODEL=${SENSENOVA_MODEL:-sensenova-6.7-flash-lite}
+      - TUSHARE_TOKEN=${TUSHARE_TOKEN}
+      - DATABASE_URL=sqlite:///./finagent.db
+      - REDIS_URL=redis://redis:6379
+      - DEBUG=false
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  redis_data:
