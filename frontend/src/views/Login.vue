@@ -103,10 +103,15 @@ async function handleSubmit() {
         return
       }
       await userStore.register(form.username, form.email, form.password)
+      // 注册成功后不自动登录，切换到登录页并提示
+      mode.value = 'login'
+      form.confirmPassword = ''
+      errorMsg.value = ''
+      alert('注册成功！请登录')
     } else {
       await userStore.login(form.username, form.password)
+      router.push('/')
     }
-    router.push('/')
   } catch (err) {
     errorMsg.value = err.response?.data?.detail || err.message || '操作失败，请重试'
   } finally {

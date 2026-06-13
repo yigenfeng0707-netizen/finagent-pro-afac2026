@@ -97,6 +97,23 @@ class DatabaseService:
     _memory_audit: List[Dict] = []
     _memory_alerts: List[Dict] = []
     _memory_reports: List[Dict] = []
+    _seeded = False
+
+    def _seed_sample_alerts(self):
+        """生成初始示例预警数据"""
+        if self._seeded:
+            return
+        self._seeded = True
+        now = datetime.now()
+        sample_alerts = [
+            {"alert_id": "alt_001", "alert_type": "price", "severity": "high", "title": "贵州茅台(600519)涨幅超过3%", "message": "当前涨幅3.25%，超过3%阈值，建议关注后续走势", "symbol": "600519", "timestamp": now.isoformat()},
+            {"alert_id": "alt_002", "alert_type": "risk", "severity": "medium", "title": "创业板持仓集中度预警", "message": "创业板标的合计占比22%，超过20%限制", "symbol": "", "timestamp": now.isoformat()},
+            {"alert_id": "alt_003", "alert_type": "news", "severity": "high", "title": "宁德时代(300750)重大利空新闻", "message": "检测到负面报道：宁德时代面临行业竞争压力加剧", "symbol": "300750", "timestamp": now.isoformat()},
+            {"alert_id": "alt_004", "alert_type": "price", "severity": "critical", "title": "比亚迪(002594)跌幅超过5%", "message": "当前跌幅5.82%，触发止损预警，建议评估是否减仓", "symbol": "002594", "timestamp": now.isoformat()},
+            {"alert_id": "alt_005", "alert_type": "compliance", "severity": "medium", "title": "单股集中度合规提醒", "message": "贵州茅台持仓占比12%，超过10%合规限制", "symbol": "600519", "timestamp": now.isoformat()},
+            {"alert_id": "alt_006", "alert_type": "market", "severity": "low", "title": "上证指数站上3200点", "message": "大盘指数突破关键点位，市场情绪偏乐观", "symbol": "000001", "timestamp": now.isoformat()},
+        ]
+        self._memory_alerts = sample_alerts
 
     async def save_analysis(self, data: Dict):
         """保存分析记录"""
@@ -139,7 +156,8 @@ class DatabaseService:
 
     async def get_alerts(self, limit: int = 20) -> List[Dict]:
         """获取预警列表"""
-        return self._memory_alerts[-limit:]
+        self._seed_sample_alerts()
+        return list(reversed(self._memory_alerts[-limit:]))
 
     async def get_reports(self, report_type: str = None, limit: int = 20) -> List[Dict]:
         """获取报告列表"""

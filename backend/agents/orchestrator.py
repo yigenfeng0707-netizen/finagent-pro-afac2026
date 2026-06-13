@@ -169,6 +169,26 @@ class AgentOrchestrator:
         except Exception as e:
             logger.warning(f"保存分析记录失败: {e}")
 
+        # 根据分析结果自动产生预警
+        try:
+            signal = recommendation.signal if hasattr(recommendation, 'signal') else 'hold'
+            severity_map = {"strong_sell": "critical", "sell": "high", "hold": "low", "buy": "low", "strong_buy": "medium"}
+            severity = severity_map.get(signal, "low")
+            if severity in ("critical", "high"):
+                change_pct = stock_data.get("change_percent", 0)
+                alert = {
+                    "alert_id": f"alt_{int(time.time()*1000)}",
+                    "alert_type": "analysis",
+                    "severity": severity,
+                    "title": f"{symbol} 分析预警：{signal}信号",
+                    "message": f"综合分析{symbol}产出{signal}信号，置信度{recommendation.confidence:.0%}，请关注",
+                    "symbol": symbol,
+                }
+                await db_service.save_alert(alert)
+                await ws_manager.send_alert(alert)
+        except Exception as e:
+            logger.warning(f"自动预警生成失败: {e}")
+
         await ws_manager.send_analysis_complete(symbol, {"recommendation": recommendation.model_dump(mode="json")})
 
         return AnalysisResponse(

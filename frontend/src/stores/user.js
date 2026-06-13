@@ -25,9 +25,8 @@ export const useUserStore = defineStore('user', () => {
 
   async function register(username, email, password) {
     const { data } = await authRegister({ username, email, password })
-    token.value = data.token
-    user.value = data.user
-    localStorage.setItem(TOKEN_KEY, data.token)
+    // 注册成功不自动登录，用户需手动登录
+    return data
   }
 
   function logout() {

@@ -36,12 +36,16 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useChatStore } from '../stores/chat'
+import { useUserStore } from '../stores/user'
 import { exportChat } from '../api'
 import ThinkingChain from '../components/ThinkingChain.vue'
 import { marked } from 'marked'
 
 const chatStore = useChatStore()
+const userStore = useUserStore()
+const router = useRouter()
 const inputText = ref('')
 const messages = computed(() => chatStore.messages)
 const isLoading = computed(() => chatStore.isLoading)
@@ -53,11 +57,25 @@ function renderMarkdown(text) {
 
 async function send() {
   if (!inputText.value.trim() || isLoading.value) return
+  // 检查免费使用次数
+  try {
+    await userStore.fetchUsage()
+    const usage = userStore.usage
+    if (usage && usage.plan === 'free' && usage.used >= usage.limit) {
+      alert('免费使用次数已用完，请升级到专业版继续使用')
+      router.push('/pricing')
+      return
+    }
+  } catch (e) { /* 不阻断 */ }
   const text = inputText.value
   inputText.value = ''
   try {
     await chatStore.sendMessage(text)
   } catch (e) {
+    if (e?.response?.status === 403) {
+      router.push('/pricing')
+      return
+    }
     chatStore.messages.push({ role: 'assistant', content: '抱歉，发送消息时出现错误，请稍后再试。', timestamp: new Date().toISOString() })
   }
 }

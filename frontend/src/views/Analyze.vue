@@ -57,12 +57,15 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAnalysisStore } from '../stores/analysis'
+import { useUserStore } from '../stores/user'
 import SignalBadge from '../components/SignalBadge.vue'
 
 const store = useAnalysisStore()
+const userStore = useUserStore()
 const route = useRoute()
+const router = useRouter()
 const symbol = ref('')
 const analysisType = ref('comprehensive')
 const includeNews = ref(true)
@@ -81,12 +84,30 @@ onMounted(() => {
 
 async function analyze() {
   if (!symbol.value) return
+  // 检查免费使用次数
+  try {
+    await userStore.fetchUsage()
+    const usage = userStore.usage
+    if (usage && usage.plan === 'free' && usage.used >= usage.limit) {
+      errorMsg.value = '免费使用次数已用完，请升级到专业版继续使用'
+      router.push('/pricing')
+      return
+    }
+  } catch (e) {
+    // usage检查失败不阻断
+  }
   isAnalyzing.value = true
   errorMsg.value = ''
   try {
     result.value = await store.analyze(symbol.value, { analysisType: analysisType.value, includeNews: includeNews.value, includeRisk: includeRisk.value, includeStrategy: includeStrategy.value })
   } catch (e) {
-    errorMsg.value = e?.response?.data?.detail || e?.message || '分析失败，请稍后重试'
+    const detail = e?.response?.data?.detail || e?.message || '分析失败，请稍后重试'
+    if (e?.response?.status === 403) {
+      errorMsg.value = '免费使用次数已用完，请升级到专业版'
+      router.push('/pricing')
+      return
+    }
+    errorMsg.value = detail
   }
   isAnalyzing.value = false
 }

@@ -2,12 +2,28 @@
 用户认证API路由
 """
 import logging
+import time
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field, EmailStr
 from typing import Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["认证"])
+
+# 注册限流：同一IP每分钟最多3次注册
+_register_rate_limit: Dict[str, list] = {}
+
+
+def _check_register_rate(client_ip: str):
+    """检查注册频率限制"""
+    now = time.time()
+    if client_ip not in _register_rate_limit:
+        _register_rate_limit[client_ip] = []
+    # 清理60秒前的记录
+    _register_rate_limit[client_ip] = [t for t in _register_rate_limit[client_ip] if now - t < 60]
+    if len(_register_rate_limit[client_ip]) >= 3:
+        raise HTTPException(status_code=429, detail="注册频率过高，请1分钟后再试")
+    _register_rate_limit[client_ip].append(now)
 
 
 # ===== 请求模型 =====
@@ -37,12 +53,15 @@ class LLMConfigRequest(BaseModel):
 # ===== 路由 =====
 
 @router.post("/register", summary="用户注册")
-async def register(request: RegisterRequest):
-    """注册新用户"""
+async def register(request: Request, body: RegisterRequest):
+    """注册新用户（限流：同IP每分钟3次）"""
+    client_ip = request.client.host if request.client else "unknown"
+    _check_register_rate(client_ip)
     from services.user_service import user_service
     try:
-        result = await user_service.register(request.username, request.email, request.password)
-        return result
+        result = await user_service.register(body.username, body.email, body.password)
+        # 注册成功不返回token，需登录获取
+        return {"message": "注册成功，请登录", "username": body.username}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
