@@ -143,8 +143,10 @@ API网关层:   FastAPI + 合规审计中间件 + 速率限制
     ↕
 推理框架层:  ReAct引擎 + Tool系统 + 三层Memory系统
     ↕
-基础服务层:  LLM服务(通义千问/DeepSeek/OpenAI) + AKShare + PostgreSQL
+基础服务层:  LLM服务(DashScope通义千问/GLM-5.1/DeepSeek/SenseNova四模型降级) + DataAdapter(AKShare+yfinance+Finnhub+OpenBB统一适配) + PostgreSQL
 ```
+
+**数据适配层**：FinAgent Pro 采用统一数据适配层(DataAdapter)设计，支持多数据源自动路由和降级。A股数据通过AKShare获取实时行情和历史K线，美股/海外数据通过yfinance和Finnhub获取，OpenBB提供基本面和财报数据。所有数据源具备三层降级机制：真实数据→缓存→Mock模拟数据，确保系统在任何网络环境下均可正常工作。
 
 ---
 
@@ -189,6 +191,7 @@ API网关层:   FastAPI + 合规审计中间件 + 速率限制
 - **核心算法**：基于"思考(Thought)→行动(Action)→观察(Observation)"循环的自主推理框架，每个智能体可独立规划推理链，动态调用工具，直至任务完成
 - **差异化**：不同于简单的Prompt→Response模式，ReAct引擎让AI真正具备"规划-执行-反思"能力，可处理多步骤复杂金融分析任务
 - **技术深度**：支持最大10步推理循环，上下文自动裁剪（6000 token窗口），结构化输出保障
+- **四模型降级链**：DashScope(qwen-plus) → GLM-5.1 → DeepSeek-v4-pro → SenseNova，当主模型不可用时自动切换至下一模型，确保推理服务高可用
 
 ### 5.2 三层记忆系统
 

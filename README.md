@@ -28,7 +28,7 @@ API网关层:   FastAPI + WebSocket + SSE
     ↕
 推理框架层:  ReAct引擎 + Tool系统 + Memory系统
     ↕
-基础服务层:  LLM服务(GLM-5.1/DeepSeek/SenseNova) + AKShare + 数据库
+基础服务层:  LLM服务(DashScope/通义千问/GLM-5.1/DeepSeek/SenseNova) + DataAdapter(AKShare+yfinance+Finnhub+OpenBB)
 ```
 
 ## 快速开始
@@ -45,6 +45,21 @@ cd backend
 pip install -r requirements.txt
 cp .env.example .env  # 编辑.env填入API密钥
 python main.py
+```
+
+### 环境变量配置
+
+复制 `.env.example` 为 `.env` 后，需配置以下关键环境变量：
+
+```bash
+# LLM服务（至少配置一个）
+DASHSCOPE_API_KEY=your_dashscope_api_key    # 阿里云百炼 DashScope
+GLM_API_KEY=your_glm_api_key                # 智谱AI GLM
+DEEPSEEK_API_KEY=your_deepseek_api_key      # DeepSeek
+SENSENOVA_API_KEY=your_sensenova_api_key    # 商汤日日新
+
+# 数据源
+FINNHUB_API_KEY=your_finnhub_api_key        # Finnhub全球市场数据
 ```
 
 ### 前端启动
@@ -77,6 +92,13 @@ docker-compose up -d
 | `/api/agents/status` | GET | 智能体状态 |
 | `/api/tasks` | GET/POST | 定时任务管理 |
 | `/api/ws` | WebSocket | 实时推送 |
+| `/api/auth/register` | POST | 注册 |
+| `/api/auth/login` | POST | 登录 |
+| `/api/auth/me` | GET | 用户信息 |
+| `/api/auth/upgrade` | POST | 升级计划 |
+| `/api/export/analysis` | POST | 导出分析Word |
+| `/api/export/report` | POST | 导出报告Word |
+| `/api/export/chat` | POST | 导出对话Word |
 
 ## 技术栈
 
@@ -84,11 +106,11 @@ docker-compose up -d
 |------|------|
 | 后端 | Python 3.12 + FastAPI + LangChain |
 | 智能体 | ReAct推理 + Tool调用 + 持久记忆 |
-| LLM | GLM-5.1 (智谱AI) / DeepSeek-v4-pro / SenseNova (商汤) |
-| 数据源 | AKShare + Tushare + 东方财富 |
+| LLM | DashScope(qwen-plus) / GLM-5.1 / DeepSeek-v4-pro / SenseNova |
+| 数据源 | AKShare + yfinance + Finnhub + OpenBB |
 | 前端 | Vue3 + TailwindCSS + TradingView |
 | 数据库 | SQLite / PostgreSQL |
-| 部署 | Docker + Vercel |
+| 部署 | Render + Vercel |
 
 ## 测试
 
@@ -104,17 +126,17 @@ FinAgent-Pro/
 ├── backend/
 │   ├── agents/           # 6大智能体 + Orchestrator
 │   ├── api/              # FastAPI路由
-│   ├── middleware/        # 速率限制 + 合规审计
+│   ├── middleware/        # 速率限制 + 合规审计 + auth.py
 │   ├── models/           # Pydantic数据模型
-│   ├── services/         # LLM/数据/新闻/风控/调度服务
+│   ├── services/         # LLM/数据/新闻/风控/调度/DataAdapter/导出服务
 │   ├── tests/            # 单元测试+集成测试
 │   ├── config.py         # 配置系统
 │   └── main.py           # 应用入口
 ├── frontend/
 │   ├── src/
 │   │   ├── components/   # Vue组件
-│   │   ├── views/        # 页面视图
-│   │   ├── stores/       # Pinia状态管理
+│   │   ├── views/        # 页面视图(Login.vue, Pricing.vue等)
+│   │   ├── stores/       # Pinia状态管理(user.js等)
 │   │   └── api.js        # API封装
 │   └── package.json
 ├── Dockerfile
