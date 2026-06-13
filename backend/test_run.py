@@ -263,6 +263,121 @@ async def test_openbb():
         record("OpenBB汇率", False, str(e))
 
 
+# ===== 任务7: Finnhub数据源测试 =====
+async def test_finnhub():
+    print("\n" + "=" * 60)
+    print("任务7: Finnhub数据源验证")
+    print("=" * 60)
+
+    from config import FINNHUB_API_KEY
+    if not FINNHUB_API_KEY:
+        record("Finnhub API Key", False, "未配置，跳过测试")
+        return
+
+    record("Finnhub API Key已配置", True, f"key={FINNHUB_API_KEY[:8]}...")
+
+    try:
+        import finnhub
+        fh = finnhub.Client(api_key=FINNHUB_API_KEY)
+
+        # 测试行情
+        quote = fh.quote("AAPL")
+        has_price = quote and quote.get("c", 0) > 0
+        record("Finnhub AAPL行情", has_price, f"price={quote.get('c')}, source=finnhub")
+
+        # 测试公司新闻
+        from datetime import datetime, timedelta
+        from_date = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+        to_date = datetime.now().strftime("%Y-%m-%d")
+        news = fh.company_news("AAPL", _from=from_date, to=to_date)
+        record("Finnhub AAPL新闻", isinstance(news, list), f"新闻数={len(news) if news else 0}")
+
+        # 测试公司信息
+        profile = fh.company_profile2(symbol="AAPL")
+        record("Finnhub AAPL公司信息", bool(profile and profile.get("name")), f"name={profile.get('name') if profile else 'N/A'}")
+
+        # 测试通用新闻
+        general = fh.general_news("general", min_id=0)
+        record("Finnhub 通用新闻", isinstance(general, list), f"新闻数={len(general) if general else 0}")
+
+    except Exception as e:
+        record("Finnhub连接测试", False, str(e))
+
+
+# ===== 任务8: 新闻服务测试 =====
+async def test_news_service():
+    print("\n" + "=" * 60)
+    print("任务8: 新闻舆情服务验证")
+    print("=" * 60)
+
+    from services.news_service import NewsService
+    svc = NewsService()
+
+    # 测试美股新闻
+    try:
+        news = await svc.fetch_stock_news(symbol="AAPL", company_name="Apple", limit=5)
+        record("AAPL新闻获取", len(news) > 0, f"新闻数={len(news)}, sources={[n.get('source') for n in news[:3]]}")
+    except Exception as e:
+        record("AAPL新闻获取", False, str(e))
+
+    # 测试A股新闻
+    try:
+        news = await svc.fetch_stock_news(symbol="600036", company_name="招商银行", limit=5)
+        record("600036新闻获取", len(news) > 0, f"新闻数={len(news)}, sources={[n.get('source') for n in news[:3]]}")
+    except Exception as e:
+        record("600036新闻获取", False, str(e))
+
+    # 测试情感分析
+    try:
+        pos = svc.analyze_sentiment("利好消息，业绩大涨超预期")
+        neg = svc.analyze_sentiment("利空，暴雷退市风险")
+        record("中文情感分析", pos["label"] == "positive" and neg["label"] == "negative",
+               f"正面={pos['label']}({pos['score']}), 负面={neg['label']}({neg['score']})")
+    except Exception as e:
+        record("中文情感分析", False, str(e))
+
+    # 测试社交情绪
+    try:
+        social = await svc.fetch_social_sentiment("AAPL")
+        record("社交情绪获取", "hot_score" in social, f"hot_score={social.get('hot_score')}")
+    except Exception as e:
+        record("社交情绪获取", False, str(e))
+
+    # 测试缓存
+    try:
+        t1 = time.time()
+        await svc.fetch_stock_news(symbol="AAPL", limit=3)
+        t2 = time.time()
+        await svc.fetch_stock_news(symbol="AAPL", limit=3)
+        t3 = time.time()
+        record("新闻缓存命中", (t3 - t2) < (t2 - t1) * 0.5, f"首次={t2-t1:.3f}s, 缓存={t3-t2:.3f}s")
+    except Exception as e:
+        record("新闻缓存命中", False, str(e))
+
+
+# ===== 任务9: 新闻智能体集成测试 =====
+async def test_news_agent():
+    print("\n" + "=" * 60)
+    print("任务9: 新闻舆情智能体集成测试")
+    print("=" * 60)
+
+    try:
+        from agents.news_agent import NewsSentimentAgent
+        agent = NewsSentimentAgent()
+
+        # 检查工具注册
+        record("新闻智能体工具注册", len(agent._tools) > 0, f"工具数={len(agent._tools)}, 工具={list(agent._tools.keys())}")
+
+        # 执行分析
+        result = await agent.analyze({"symbol": "AAPL", "company_name": "Apple"})
+        record("新闻智能体分析", "signal" in result and "analysis" in result,
+               f"signal={result.get('signal')}, news_count={result.get('metadata', {}).get('news_count')}")
+        record("新闻智能体非空结果", result.get("analysis") != "暂无相关新闻数据",
+               f"analysis={result.get('analysis', '')[:80]}")
+    except Exception as e:
+        record("新闻智能体集成", False, str(e))
+
+
 # ===== 输出最终报告 =====
 def print_report():
     print("\n" + "=" * 60)
@@ -321,6 +436,9 @@ async def main():
     await test_degradation()
     await test_market_data_service()
     await test_openbb()
+    await test_finnhub()
+    await test_news_service()
+    await test_news_agent()
 
     print_report()
 
