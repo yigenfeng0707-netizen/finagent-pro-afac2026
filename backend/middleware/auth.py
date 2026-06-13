@@ -1,5 +1,5 @@
 """
-认证中间件 - 从Authorization header提取token，验证并注入user_id
+认证中间件 - 从Authorization header提取token，验证并注入user_id和role
 """
 import logging
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -37,20 +37,21 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # 提取token
         auth_header = request.headers.get("Authorization", "")
         if not auth_header.startswith("Bearer "):
-            # 没有token时允许访问（兼容无认证模式），但user_id为空
             request.state.user_id = None
+            request.state.user_role = None
             return await call_next(request)
 
-        token = auth_header[7:]  # 去掉 "Bearer " 前缀
+        token = auth_header[7:]
 
         from services.user_service import user_service
-        user_id = user_service.verify_token(token)
+        payload = user_service.verify_token(token)
 
-        if user_id is None:
+        if payload is None:
             return JSONResponse(
                 status_code=401,
                 content={"detail": "无效或过期的登录凭证，请重新登录"}
             )
 
-        request.state.user_id = user_id
+        request.state.user_id = int(payload.get("sub", 0))
+        request.state.user_role = payload.get("role", "user")
         return await call_next(request)

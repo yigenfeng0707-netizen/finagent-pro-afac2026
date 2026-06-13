@@ -10,8 +10,10 @@ export const useUserStore = defineStore('user', () => {
   const usage = ref({ used: 0, limit: 1, plan: 'free', remaining: 1 })
 
   const isLoggedIn = computed(() => !!token.value)
-  const isFreeUser = computed(() => user.value?.plan === 'free')
+  const isFreeUser = computed(() => user.value?.plan === 'free' && user.value?.role !== 'superadmin' && user.value?.role !== 'admin')
+  const isAdmin = computed(() => user.value?.role === 'admin' || user.value?.role === 'superadmin')
   const isUsageExceeded = computed(() => {
+    if (isAdmin.value) return false
     if (!isFreeUser.value) return false
     return usage.value.remaining <= 0
   })
@@ -71,7 +73,7 @@ export const useUserStore = defineStore('user', () => {
 
   return {
     token, user, usage,
-    isLoggedIn, isFreeUser, isUsageExceeded,
+    isLoggedIn, isFreeUser, isAdmin, isUsageExceeded,
     login, register, logout, fetchUser, fetchUsage, upgradePlan, init,
   }
 })

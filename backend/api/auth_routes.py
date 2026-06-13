@@ -67,11 +67,12 @@ async def register(request: Request, body: RegisterRequest):
 
 
 @router.post("/login", summary="用户登录")
-async def login(request: LoginRequest):
+async def login(request: Request, body: LoginRequest):
     """用户登录，返回JWT token"""
+    client_ip = request.client.host if request.client else ""
     from services.user_service import user_service
     try:
-        result = await user_service.login(request.username, request.password)
+        result = await user_service.login(body.username, body.password, client_ip)
         return result
     except ValueError as e:
         raise HTTPException(status_code=401, detail=str(e))
@@ -129,3 +130,58 @@ async def get_usage(request: Request):
         raise HTTPException(status_code=401, detail="未登录")
     from services.user_service import user_service
     return await user_service.get_usage(user_id)
+
+
+# ===== 管理员API =====
+
+def _require_admin(request: Request):
+    """检查管理员权限"""
+    role = getattr(request.state, "user_role", None)
+    if role not in ("admin", "superadmin"):
+        raise HTTPException(status_code=403, detail="需要管理员权限")
+
+
+@router.get("/admin/users", summary="获取所有用户列表")
+async def admin_get_users(request: Request, limit: int = 100, offset: int = 0):
+    """管理员：获取所有用户列表"""
+    _require_admin(request)
+    from services.user_service import user_service
+    users = await user_service.get_all_users(limit, offset)
+    return {"users": users, "total": len(users)}
+
+
+@router.get("/admin/stats", summary="管理后台统计数据")
+async def admin_get_stats(request: Request):
+    """管理员：获取仪表盘统计数据"""
+    _require_admin(request)
+    from services.user_service import user_service
+    return await user_service.get_dashboard_stats()
+
+
+@router.get("/admin/user/{user_id}/profile", summary="获取用户画像")
+async def admin_get_user_profile(request: Request, user_id: int):
+    """管理员：获取用户画像和行为分析"""
+    _require_admin(request)
+    from services.user_service import user_service
+    profile = await user_service.get_user_profile(user_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    return profile
+
+
+@router.get("/admin/actions", summary="获取用户行为日志")
+async def admin_get_actions(request: Request, user_id: int = None, limit: int = 100):
+    """管理员：获取用户行为日志"""
+    _require_admin(request)
+    from services.user_service import user_service
+    return {"actions": await user_service.get_user_actions(user_id, limit)}
+
+
+@router.post("/admin/user/{user_id}/plan", summary="修改用户计划")
+async def admin_update_user_plan(request: Request, user_id: int, body: UpgradeRequest):
+    """管理员：修改用户付费计划"""
+    _require_admin(request)
+    from services.user_service import user_service
+    await user_service.update_plan(user_id, body.plan)
+    user = await user_service.get_user(user_id)
+    return {"message": "用户计划修改成功", "user": user}
