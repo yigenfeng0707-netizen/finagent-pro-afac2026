@@ -31,12 +31,48 @@
         </div>
       </div>
     </div>
+
+    <!-- 用户信息 -->
+    <div class="p-3 border-t border-dark-700">
+      <div v-if="userStore.isLoggedIn && userStore.user" class="space-y-2">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-primary-600/30 rounded-full flex items-center justify-center text-primary-400 text-sm font-bold">
+            {{ userStore.user.username?.charAt(0)?.toUpperCase() || 'U' }}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm text-white font-medium truncate">{{ userStore.user.username }}</div>
+            <div class="flex items-center gap-1.5">
+              <span class="badge text-[10px]" :class="planBadgeClass">{{ planLabel }}</span>
+              <span v-if="userStore.isFreeUser" class="text-[10px] text-dark-500">{{ userStore.usage.remaining }}次剩余</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <router-link to="/pricing" class="flex-1 text-center text-xs text-primary-400 hover:text-primary-300 bg-primary-600/10 hover:bg-primary-600/20 rounded-md py-1.5 transition-colors">
+            {{ userStore.isFreeUser ? '升级套餐' : '管理套餐' }}
+          </router-link>
+          <button @click="handleLogout" class="flex-1 text-center text-xs text-dark-400 hover:text-white bg-dark-800 hover:bg-dark-700 rounded-md py-1.5 transition-colors">
+            退出登录
+          </button>
+        </div>
+      </div>
+      <div v-else>
+        <router-link to="/login" class="block text-center text-sm text-primary-400 hover:text-primary-300 py-2">
+          登录 / 注册
+        </router-link>
+      </div>
+    </div>
   </aside>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { getAgentStatus } from '../api'
+import { useUserStore } from '../stores/user'
+
+const router = useRouter()
+const userStore = useUserStore()
 
 const navItems = [
   { path: '/', icon: '📊', label: '工作台' },
@@ -64,6 +100,25 @@ const agents = ref([
   { name: '报告生成', running: false },
   { name: '执行监控', running: false },
 ])
+
+const planLabel = computed(() => {
+  const planMap = { free: '免费版', pro: '专业版', enterprise: '企业版' }
+  return planMap[userStore.user?.plan] || '免费版'
+})
+
+const planBadgeClass = computed(() => {
+  const classMap = {
+    free: 'bg-dark-600 text-dark-300',
+    pro: 'bg-primary-600/20 text-primary-400',
+    enterprise: 'bg-warning/20 text-warning',
+  }
+  return classMap[userStore.user?.plan] || 'bg-dark-600 text-dark-300'
+})
+
+function handleLogout() {
+  userStore.logout()
+  router.push('/login')
+}
 
 let statusTimer = null
 

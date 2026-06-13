@@ -4,6 +4,7 @@ import uuid
 from typing import Any, Dict, List
 from datetime import datetime
 from .base_agent import BaseAgent
+from .tools import register_report_tools
 from .memory import get_agent_memory
 from services.llm_service import llm_service
 from services.database_service import db_service
@@ -21,6 +22,7 @@ class ReportAgent(BaseAgent):
             description="自动生成专业金融分析报告，包括晨报、个股研报、风控周报、组合月报和事件快报",
             max_steps=5,
         )
+        register_report_tools(self)
         self.memory = get_agent_memory("report")
 
     async def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:

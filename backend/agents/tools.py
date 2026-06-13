@@ -193,6 +193,68 @@ def register_risk_tools(agent):
     )
 
 
+def register_report_tools(agent):
+    """为智能体注册报告生成工具"""
+    agent.register_tool(
+        name="generate_morning_report",
+        description="生成金融晨报，包含隔夜市场、今日关注、持仓变动、风险提示等章节",
+        func=agent.generate_report,
+        parameters={"report_type": {"type": "string", "description": "报告类型: morning_daily"}, "symbol": {"type": "string", "description": "股票代码（可选）"}}
+    )
+    agent.register_tool(
+        name="generate_stock_research",
+        description="生成个股研报，包含公司概况、财务分析、估值分析、投资建议等章节",
+        func=agent.generate_report,
+        parameters={"report_type": {"type": "string", "description": "报告类型: stock_research"}, "symbol": {"type": "string", "description": "股票代码"}}
+    )
+    agent.register_tool(
+        name="generate_risk_weekly",
+        description="生成风控周报，包含风险指标、预警事件、合规检查、下周关注等章节",
+        func=agent.generate_report,
+        parameters={"report_type": {"type": "string", "description": "报告类型: risk_weekly"}}
+    )
+    agent.register_tool(
+        name="generate_portfolio_monthly",
+        description="生成组合月报，包含业绩回顾、持仓分析、调仓建议、下月展望等章节",
+        func=agent.generate_report,
+        parameters={"report_type": {"type": "string", "description": "报告类型: portfolio_monthly"}}
+    )
+    agent.register_tool(
+        name="generate_event_flash",
+        description="生成事件快报，包含事件概述、影响分析、操作建议等章节",
+        func=agent.generate_report,
+        parameters={"report_type": {"type": "string", "description": "报告类型: event_flash"}}
+    )
+
+
+def register_execution_tools(agent):
+    """为智能体注册执行监控工具"""
+    agent.register_tool(
+        name="morning_scan",
+        description="晨间巡检：扫描市场指数、持仓变动、重大事件",
+        func=agent._morning_scan,
+        parameters={}
+    )
+    agent.register_tool(
+        name="risk_scan",
+        description="风险扫描：检查持仓风险，发现超阈值波动并触发预警",
+        func=agent._risk_scan,
+        parameters={"portfolio": {"type": "object", "description": "持仓数据"}}
+    )
+    agent.register_tool(
+        name="price_alert",
+        description="价格预警：监控个股价格波动，超过阈值时触发预警",
+        func=agent._price_alert,
+        parameters={"symbol": {"type": "string", "description": "股票代码"}, "threshold": {"type": "number", "description": "波动阈值，默认0.05(5%)"}}
+    )
+    agent.register_tool(
+        name="news_monitor",
+        description="新闻监控：监控重要新闻和公告，发现异常舆情时触发预警",
+        func=agent._morning_scan,
+        parameters={}
+    )
+
+
 def register_all_tools(agent):
     """为智能体注册所有工具"""
     register_market_tools(agent)

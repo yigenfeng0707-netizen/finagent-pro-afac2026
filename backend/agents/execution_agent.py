@@ -4,6 +4,7 @@ import uuid
 from typing import Any, Dict, List
 from datetime import datetime
 from .base_agent import BaseAgent
+from .tools import register_execution_tools
 from .memory import get_agent_memory
 from services.llm_service import llm_service
 from services.database_service import db_service
@@ -22,6 +23,7 @@ class ExecutionAgent(BaseAgent):
             description="负责定时巡检、实时监控、主动预警和自主任务执行，推动金融服务从被动响应迈向主动智能",
             max_steps=5,
         )
+        register_execution_tools(self)
         self.memory = get_agent_memory("execution")
 
     async def analyze(self, data: Dict[str, Any]) -> Dict[str, Any]:

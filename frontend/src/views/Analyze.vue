@@ -69,6 +69,7 @@ const includeNews = ref(true)
 const includeRisk = ref(true)
 const includeStrategy = ref(false)
 const isAnalyzing = ref(false)
+const isExporting = ref(false)
 const result = ref(null)
 const errorMsg = ref('')
 
@@ -88,5 +89,30 @@ async function analyze() {
     errorMsg.value = e?.response?.data?.detail || e?.message || '分析失败，请稍后重试'
   }
   isAnalyzing.value = false
+}
+
+async function doExport() {
+  if (!result.value || isExporting.value) return
+  isExporting.value = true
+  try {
+    const exportData = {
+      symbol: result.value.symbol || symbol.value,
+      company_name: result.value.company_name || '',
+      current_price: result.value.current_price,
+      recommendation: result.value.recommendation,
+      agent_results: result.value.agent_results,
+      processing_time: result.value.processing_time,
+    }
+    const { data } = await exportAnalysis(exportData)
+    const url = window.URL.createObjectURL(data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${symbol.value}_分析报告.docx`
+    a.click()
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    console.error('导出失败:', e)
+  }
+  isExporting.value = false
 }
 </script>

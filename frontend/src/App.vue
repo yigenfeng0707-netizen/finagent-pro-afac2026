@@ -1,13 +1,16 @@
 <template>
   <div class="flex h-screen overflow-hidden">
-    <!-- 侧边栏 -->
-    <Sidebar />
+    <!-- 登录/注册页面不显示侧边栏 -->
+    <template v-if="!isAuthPage">
+      <!-- 侧边栏 -->
+      <Sidebar />
+    </template>
     <!-- 主内容区 -->
-    <main class="flex-1 overflow-y-auto">
+    <main class="flex-1 overflow-y-auto" :class="{ 'overflow-hidden': isAuthPage }">
       <router-view />
     </main>
     <!-- 右侧预警面板 -->
-    <AlertPanel v-if="showAlertPanel" @close="showAlertPanel = false" />
+    <AlertPanel v-if="showAlertPanel && !isAuthPage" @close="showAlertPanel = false" />
 
     <!-- 全局 Toast 提示 -->
     <Teleport to="body">
@@ -45,11 +48,18 @@
 </template>
 
 <script setup>
-import { ref, provide, onMounted, onUnmounted } from 'vue'
+import { ref, provide, onMounted, onUnmounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import Sidebar from './components/Sidebar.vue'
 import AlertPanel from './components/AlertPanel.vue'
 import { useWebSocket } from './composables/useWebSocket'
 import { useEventBus } from './composables/useEventBus'
+import { useUserStore } from './stores/user'
+
+const route = useRoute()
+const userStore = useUserStore()
+
+const isAuthPage = computed(() => route.path === '/login')
 
 const showAlertPanel = ref(false)
 provide('toggleAlertPanel', () => { showAlertPanel.value = !showAlertPanel.value })
@@ -157,6 +167,9 @@ function onWsDisconnected() {
 
 // ===== 生命周期 =====
 onMounted(() => {
+  // 初始化用户信息
+  userStore.init()
+
   // 注册 WebSocket 事件监听
   onEvent('ws:agent_progress', onAgentProgress)
   onEvent('ws:analysis_complete', onAnalysisComplete)

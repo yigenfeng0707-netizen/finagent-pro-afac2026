@@ -1,4 +1,5 @@
 import axios from 'axios'
+import router from './router'
 
 // 生产环境使用Render后端地址，开发环境走Vite代理
 const baseURL = import.meta.env.VITE_API_URL
@@ -11,6 +12,15 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+// 请求拦截器 - 自动添加Authorization header
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('finagent_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
 // 统一响应拦截器
 api.interceptors.response.use(
   (response) => response,
@@ -20,6 +30,11 @@ api.interceptors.response.use(
       switch (status) {
         case 401:
           error.message = '登录已过期，请重新登录'
+          // 401自动跳转登录页
+          localStorage.removeItem('finagent_token')
+          if (router.currentRoute.value.path !== '/login') {
+            router.push({ path: '/login', query: { redirect: router.currentRoute.value.fullPath } })
+          }
           break
         case 403:
           error.message = '没有权限执行此操作'
@@ -51,6 +66,14 @@ api.interceptors.response.use(
   }
 )
 
+// ===== 认证相关 API =====
+export const authRegister = (data) => api.post('/auth/register', data)
+export const authLogin = (data) => api.post('/auth/login', data)
+export const authGetMe = () => api.get('/auth/me')
+export const authUpgrade = (data) => api.post('/auth/upgrade', data)
+export const saveLLMConfig = (data) => api.post('/auth/llm-config', data)
+export const authGetUsage = () => api.get('/auth/usage')
+
 // 股票分析
 export const analyzeStock = (data) => api.post('/analyze', data, { timeout: 120000 })
 export const getStockData = (symbol) => api.get(`/stock/${symbol}`)
@@ -77,6 +100,11 @@ export const deleteScheduledTask = (id) => api.delete(`/tasks/${id}`)
 
 // 智能体状态
 export const getAgentStatus = () => api.get('/agents/status')
+
+// 导出Word
+export const exportAnalysis = (data) => api.post('/export/analysis', data, { responseType: 'blob' })
+export const exportReport = (data) => api.post('/export/report', data, { responseType: 'blob' })
+export const exportChat = (data) => api.post('/export/chat', data, { responseType: 'blob' })
 
 // 合规审计
 export const getAuditLog = (limit = 50) => api.get('/audit/log', { params: { limit } })

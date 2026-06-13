@@ -19,6 +19,7 @@
           <button @click="toggleReport(report.report_id)" class="text-xs text-primary-400 hover:text-primary-300">
             {{ expandedReports[report.report_id] ? '收起 ▲' : '查看详情 ▼' }}
           </button>
+          <button @click="doExportReport(report)" class="text-xs text-primary-400 hover:text-primary-300 ml-2">📄 导出Word</button>
         </div>
         <div v-if="expandedReports[report.report_id] && report.content" class="mt-3 pt-3 border-t border-dark-600">
           <div class="markdown-body text-sm text-dark-200" v-html="renderMarkdown(report.content)"></div>
@@ -91,6 +92,31 @@ function renderMarkdown(text) {
 }
 
 function formatTime(ts) { return ts ? new Date(ts).toLocaleString('zh-CN') : '' }
+
+async function doExportReport(report) {
+  try {
+    const exportData = {
+      report_id: report.report_id,
+      title: report.title,
+      report_type: report.report_type,
+      content: report.content,
+      summary: report.summary,
+      symbols: report.symbols,
+      generated_at: report.generated_at || report.created_at,
+      key_findings: report.key_findings,
+      risk_factors: report.risk_factors,
+    }
+    const { data } = await exportReport(exportData)
+    const url = window.URL.createObjectURL(data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${report.title || '报告'}.docx`
+    a.click()
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    console.error('导出失败:', e)
+  }
+}
 </script>
 
 <style scoped>

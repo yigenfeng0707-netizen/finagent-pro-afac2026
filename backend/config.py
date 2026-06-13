@@ -52,10 +52,17 @@ APP_NAME = os.getenv("APP_NAME", "FinAgent Pro")
 APP_VERSION = "1.0.0"
 DEBUG = os.getenv("DEBUG", "true").lower() == "true"
 SECRET_KEY = os.getenv("SECRET_KEY", "") or os.urandom(32).hex()
+JWT_SECRET = os.getenv("JWT_SECRET", SECRET_KEY)
+FREE_USAGE_LIMIT = int(os.getenv("FREE_USAGE_LIMIT", "1"))
 
 # Data Sources
-AKSHARE_ENABLED = True
+AKSHARE_ENABLED = os.getenv("AKSHARE_ENABLED", "true").lower() == "true"
 TUSHARE_ENABLED = bool(TUSHARE_TOKEN)
+
+# Data Source Configuration
+USE_REAL_DATA = os.getenv("USE_REAL_DATA", "true").lower() == "true"
+FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
+YFINANCE_ENABLED = os.getenv("YFINANCE_ENABLED", "true").lower() == "true"
 
 # Agent Configuration
 MAX_CONCURRENT_AGENTS = 6

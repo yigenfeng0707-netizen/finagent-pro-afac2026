@@ -1,6 +1,9 @@
 <template>
   <div class="flex flex-col h-full p-6">
-    <h1 class="text-2xl font-bold text-white mb-4">数字员工对话</h1>
+    <div class="flex items-center justify-between mb-4">
+      <h1 class="text-2xl font-bold text-white">数字员工对话</h1>
+      <button v-if="messages.length" @click="doExportChat" :disabled="isExporting" class="btn-secondary text-sm">{{ isExporting ? '导出中...' : '📄 导出对话' }}</button>
+    </div>
     <!-- 消息列表 -->
     <div class="flex-1 overflow-y-auto space-y-4 mb-4">
       <div v-if="!messages.length" class="text-center text-dark-500 py-12">
@@ -34,6 +37,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useChatStore } from '../stores/chat'
+import { exportChat } from '../api'
 import ThinkingChain from '../components/ThinkingChain.vue'
 import { marked } from 'marked'
 
@@ -56,6 +60,28 @@ async function send() {
   } catch (e) {
     chatStore.messages.push({ role: 'assistant', content: '抱歉，发送消息时出现错误，请稍后再试。', timestamp: new Date().toISOString() })
   }
+}
+
+async function doExportChat() {
+  if (!messages.value.length || isExporting.value) return
+  isExporting.value = true
+  try {
+    const exportMessages = messages.value.map(m => ({
+      role: m.role,
+      content: m.content,
+      timestamp: m.timestamp,
+    }))
+    const { data } = await exportChat({ messages: exportMessages })
+    const url = window.URL.createObjectURL(data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = '对话记录.docx'
+    a.click()
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    console.error('导出失败:', e)
+  }
+  isExporting.value = false
 }
 </script>
 

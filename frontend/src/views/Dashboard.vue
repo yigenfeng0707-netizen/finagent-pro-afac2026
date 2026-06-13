@@ -45,11 +45,11 @@
         <div class="space-y-2">
           <div v-for="(status, name) in agentStatus" :key="name" class="flex items-center justify-between py-2 border-b border-dark-700 last:border-0">
             <div class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full" :class="status.execution_count > 0 ? 'bg-success animate-pulse' : 'bg-dark-500'"></span>
+              <span class="w-2 h-2 rounded-full" :class="status.is_running ? 'bg-success animate-pulse' : (status.tools && status.tools.length > 0 ? 'bg-primary-500' : 'bg-dark-500')"></span>
               <span class="text-sm">{{ status.name }}</span>
             </div>
             <div class="text-xs text-dark-400">
-              执行{{ status.execution_count }}次 · 成功率{{ (status.success_rate * 100).toFixed(0) }}%
+              {{ status.is_running ? '运行中' : (status.tools && status.tools.length > 0 ? '已就绪' : '未就绪') }} · 执行{{ status.execution_count }}次
             </div>
           </div>
         </div>
