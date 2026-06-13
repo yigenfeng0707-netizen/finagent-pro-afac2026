@@ -115,6 +115,19 @@ class DataAdapter:
             return None
 
     async def _get_overseas_quote(self, symbol: str) -> Optional[Dict]:
+        """yfinance + Finnhub获取海外股票行情"""
+        # 优先yfinance
+        result = await self._get_yfinance_quote(symbol)
+        if result:
+            return result
+        # yfinance失败，尝试Finnhub
+        if _FH_AVAILABLE:
+            result = await self._get_finnhub_quote(symbol)
+            if result:
+                return result
+        return None
+
+    async def _get_yfinance_quote(self, symbol: str) -> Optional[Dict]:
         """yfinance获取海外股票行情"""
         try:
             ticker = yf.Ticker(symbol)
@@ -145,6 +158,42 @@ class DataAdapter:
             }
         except Exception as e:
             logger.warning(f"yfinance获取海外行情失败[{symbol}]: {e}")
+            return None
+
+    async def _get_finnhub_quote(self, symbol: str) -> Optional[Dict]:
+        """Finnhub获取海外股票行情"""
+        try:
+            fh_client = finnhub.Client(api_key=FINNHUB_API_KEY)
+            quote = fh_client.quote(symbol)
+            if not quote or quote.get('c', 0) == 0:
+                return None
+            price = quote.get('c', 0)  # current price
+            prev = quote.get('pc', 0)  # previous close
+            change = price - prev if price and prev else 0
+            change_pct = (change / prev * 100) if prev else 0
+            # 获取公司信息
+            profile = fh_client.company_profile2(symbol=symbol)
+            name = profile.get('name', symbol) if profile else symbol
+            return {
+                "symbol": symbol,
+                "name": name,
+                "current_price": round(float(price), 2),
+                "change": round(float(change), 2),
+                "change_percent": round(float(change_pct), 2),
+                "volume": int(quote.get('v', 0)) or 0,
+                "amount": 0,
+                "high": round(float(quote.get('h', 0)), 2),
+                "low": round(float(quote.get('l', 0)), 2),
+                "open": round(float(quote.get('o', 0)), 2),
+                "prev_close": round(float(prev), 2) if prev else 0,
+                "market_cap": profile.get('marketCapitalization') if profile else None,
+                "pe_ratio": None,
+                "pb_ratio": None,
+                "turnover_rate": None,
+                "source": "finnhub",
+            }
+        except Exception as e:
+            logger.warning(f"Finnhub获取海外行情失败[{symbol}]: {e}")
             return None
 
     async def get_historical_data(self, symbol: str, period: str = "6mo") -> pd.DataFrame:
