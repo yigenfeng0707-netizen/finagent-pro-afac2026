@@ -4,17 +4,85 @@ services:
     runtime: python
     region: oregon
     plan: free
-    branch: main
+    branch: master
     buildCommand: cd backend && pip install -r requirements.txt
     startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
+      # ===== LLM配置 =====
+      - key: LLM_PROVIDER
+        value: dashscope
+      - key: LLM_ENABLED
+        value: "true"
+      # DashScope (主模型)
+      - key: DASHSCOPE_API_KEY
+        sync: false
+      - key: DASHSCOPE_BASE_URL
+        value: https://dashscope.aliyuncs.com/compatible-mode/v1
+      - key: DASHSCOPE_MODEL
+        value: qwen-plus
+      # GLM-5.1 (备选)
       - key: GLM_API_KEY
         sync: false
+      - key: GLM_BASE_URL
+        value: https://api.edgefn.net/v1
+      - key: GLM_MODEL
+        value: GLM-5.1
+      # DeepSeek (备选)
       - key: DEEPSEEK_API_KEY
         sync: false
+      - key: DEEPSEEK_BASE_URL
+        value: https://api.deepseek.com
+      - key: DEEPSEEK_MODEL
+        value: deepseek-v4-pro
+      # SenseNova (备选)
       - key: SENSENOVA_API_KEY
         sync: false
+      - key: SENSENOVA_BASE_URL
+        value: https://token.sensenova.cn/v1
+      - key: SENSENOVA_MODEL
+        value: sensenova-6.7-flash-lite
+      # ===== 数据源配置 =====
+      - key: USE_REAL_DATA
+        value: "true"
+      - key: YFINANCE_ENABLED
+        value: "true"
+      - key: AKSHARE_ENABLED
+        value: "true"
+      - key: FINNHUB_API_KEY
+        sync: false
+      - key: TUSHARE_TOKEN
+        sync: false
+      - key: NEWSAPI_KEY
+        sync: false
+      # ===== 数据库 =====
       - key: DATABASE_URL
         value: sqlite:///./finagent.db
       - key: REDIS_URL
         sync: false
+      # ===== 应用配置 =====
+      - key: DEBUG
+        value: "true"
+      - key: SECRET_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FREE_USAGE_LIMIT
+        value: "1"
+      - key: API_ACCESS_ENABLED
+        value: "false"
+      # ===== 合规配置 =====
+      - key: COMPLIANCE_ENABLED
+        value: "true"
+      - key: MAX_SINGLE_STOCK_RATIO
+        value: "0.10"
+      - key: MAX_SECTOR_RATIO
+        value: "0.30"
+      - key: MAX_GEM_RATIO
+        value: "0.20"
+      # ===== 定时任务 =====
+      - key: SCHEDULER_ENABLED
+        value: "true"
+      - key: MORNING_REPORT_TIME
+        value: "08:30"
+      - key: EVENING_REPORT_TIME
+        value: "17:00"
