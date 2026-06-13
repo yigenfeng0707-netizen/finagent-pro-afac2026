@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from config import APP_NAME, APP_VERSION, DEBUG
 from api.routes import router
 from api.auth_routes import router as auth_router
+from api.export_routes import router as export_router
 from middleware.rate_limiter import RateLimiterMiddleware
 from middleware.compliance_audit import ComplianceAuditMiddleware
 from middleware.auth import AuthMiddleware
