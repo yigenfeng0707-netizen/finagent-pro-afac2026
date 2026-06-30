@@ -1,0 +1,58 @@
+{
+  "run_at": "2026-06-30T11:19:00.748573",
+  "sample_size": 5,
+  "success_count": 5,
+  "error_count": 0,
+  "latency": {
+    "p50_s": 33.86,
+    "p95_s": 45.66,
+    "mean_s": 33.83,
+    "max_s": 45.66
+  },
+  "compliance_pass_rate_percent": 100.0,
+  "real_data_rate_percent": 0.0,
+  "signal_success_rate_percent": 100.0,
+  "per_stock": [
+    {
+      "symbol": "600519",
+      "latency_s": 40.63,
+      "signal": "hold",
+      "confidence": 0.82,
+      "data_source": "mock",
+      "compliance_passed": true
+    },
+    {
+      "symbol": "000858",
+      "latency_s": 45.66,
+      "signal": "hold",
+      "confidence": 0.78,
+      "data_source": "mock",
+      "compliance_passed": true
+    },
+    {
+      "symbol": "002594",
+      "latency_s": 33.86,
+      "signal": "hold",
+      "confidence": 0.74,
+      "data_source": "mock",
+      "compliance_passed": true
+    },
+    {
+      "symbol": "601318",
+      "latency_s": 24.05,
+      "signal": "hold",
+      "confidence": 0.74,
+      "data_source": "mock",
+      "compliance_passed": true
+    },
+    {
+      "symbol": "600036",
+      "latency_s": 24.95,
+      "signal": "hold",
+      "confidence": 0.81,
+      "data_source": "mock",
+      "compliance_passed": true
+    }
+  ],
+  "errors": []
+}

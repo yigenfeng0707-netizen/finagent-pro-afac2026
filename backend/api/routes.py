@@ -17,7 +17,7 @@ router = APIRouter()
 @router.get("/health", summary="健康检查")
 async def health_check():
     """服务健康检查接口"""
-    return {"status": "ok", "app": "FinAgent Pro", "version": "1.0.0"}
+    return {"status": "ok", "app": "FinAgent Pro", "version": "2.0.0", "demo_mode": __import__("config").DEMO_MODE}
 
 
 # ===== 股票分析 =====

@@ -12,6 +12,26 @@
       </div>
     </div>
 
+    <!-- 数字员工今日概览 -->
+    <div v-if="stats" class="grid grid-cols-4 gap-4">
+      <div class="card-glow text-center">
+        <div class="text-xs text-dark-400">今日完成任务</div>
+        <div class="text-2xl font-bold text-primary-400">{{ stats.tasks_completed_today }}</div>
+      </div>
+      <div class="card-glow text-center">
+        <div class="text-xs text-dark-400">智能体在线</div>
+        <div class="text-2xl font-bold text-success">{{ stats.agents_online }}/6</div>
+      </div>
+      <div class="card-glow text-center">
+        <div class="text-xs text-dark-400">P95分析时延</div>
+        <div class="text-2xl font-bold text-white">{{ stats.benchmark_p95_latency_s ?? '--' }}s</div>
+      </div>
+      <div class="card-glow text-center">
+        <div class="text-xs text-dark-400">合规通过率</div>
+        <div class="text-2xl font-bold text-success">{{ stats.compliance_pass_rate ?? 100 }}%</div>
+      </div>
+    </div>
+
     <!-- 市场概览卡片 -->
     <div class="grid grid-cols-4 gap-4">
       <div v-for="idx in marketIndices" :key="idx.name" class="card-glow">
@@ -101,7 +121,7 @@
 import { ref, onMounted, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAnalysisStore } from '../stores/analysis'
-import { getMarketOverview, getAlerts } from '../api'
+import { getMarketOverview, getAlerts, getDashboardStats } from '../api'
 import SignalBadge from '../components/SignalBadge.vue'
 
 const router = useRouter()
@@ -121,6 +141,7 @@ const agentStatus = ref({})
 const recentAlerts = ref([])
 const currentAnalysis = ref(null)
 const errorMsg = ref('')
+const stats = ref(null)
 
 onMounted(async () => {
   // 更新时间
@@ -140,6 +161,14 @@ onMounted(async () => {
     agentStatus.value = store.agentStatus
   } catch (e) {
     console.warn('获取智能体状态失败:', e?.message)
+  }
+
+  // 获取工作台统计
+  try {
+    const { data } = await getDashboardStats()
+    stats.value = data
+  } catch (e) {
+    console.warn('获取统计数据失败:', e?.message)
   }
 
   // 获取预警

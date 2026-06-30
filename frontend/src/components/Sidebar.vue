@@ -82,6 +82,8 @@ const navItems = computed(() => {
     { path: '/agents', icon: '🤖', label: '智能体管理' },
     { path: '/reports', icon: '📄', label: '报告中心' },
     { path: '/alerts', icon: '🔔', label: '预警中心' },
+    { path: '/cases', icon: '🏆', label: '试点案例' },
+    { path: '/audit', icon: '📋', label: '审计日志' },
   ]
   // 管理员显示管理后台入口
   if (userStore.user?.role === 'admin' || userStore.user?.role === 'superadmin') {

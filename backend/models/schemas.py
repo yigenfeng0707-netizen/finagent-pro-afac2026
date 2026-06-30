@@ -128,6 +128,9 @@ class AnalysisResponse(BaseModel):
     recommendation: Optional[InvestmentRecommendation] = None
     agent_results: Dict[str, AgentResult] = {}
     processing_time: float = 0.0
+    data_source: str = "unknown"
+    is_mock: bool = False
+    compliance_passed: bool = True
     timestamp: datetime = Field(default_factory=datetime.now)
 
 

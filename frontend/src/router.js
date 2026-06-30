@@ -9,6 +9,8 @@ const routes = [
   { path: '/agents', name: 'Agents', component: () => import('./views/Agents.vue') },
   { path: '/reports', name: 'Reports', component: () => import('./views/Reports.vue') },
   { path: '/alerts', name: 'Alerts', component: () => import('./views/Alerts.vue') },
+  { path: '/cases', name: 'Cases', component: () => import('./views/Cases.vue') },
+  { path: '/audit', name: 'AuditLog', component: () => import('./views/AuditLog.vue') },
   { path: '/admin', name: 'Admin', component: () => import('./views/Admin.vue') },
 ]
 

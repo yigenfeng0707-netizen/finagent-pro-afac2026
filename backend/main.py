@@ -8,6 +8,7 @@ from config import APP_NAME, APP_VERSION, DEBUG
 from api.routes import router
 from api.auth_routes import router as auth_router
 from api.export_routes import router as export_router
+from api.competition_routes import router as competition_router
 from middleware.rate_limiter import RateLimiterMiddleware
 from middleware.compliance_audit import ComplianceAuditMiddleware
 from middleware.auth import AuthMiddleware
@@ -61,6 +62,7 @@ app.add_middleware(ComplianceAuditMiddleware)
 app.include_router(auth_router, prefix="/api")
 app.include_router(router, prefix="/api")
 app.include_router(export_router, prefix="/api")
+app.include_router(competition_router, prefix="/api")
 
 # 静态文件（仅本地开发时挂载，Render部署不需要）
 import os

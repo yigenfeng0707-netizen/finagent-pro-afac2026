@@ -1,0 +1,33 @@
+{
+  "partner_name": "某高校金融科技联合实验室",
+  "partner_type": "高校产学研试点",
+  "period": "2026-06-15 ~ 2026-06-28",
+  "anonymous": true,
+  "pain_points": [
+    "研究生团队需覆盖20+只A股标的，人工撰写晨报耗时3小时/天",
+    "突发利空响应慢，缺乏7×24自动监控",
+    "AI工具输出不可审计，不敢用于正式研报"
+  ],
+  "solution": {
+    "agents_used": ["market", "news", "risk", "report", "execution"],
+    "features": ["每日晨报", "5只持仓监控", "合规内嵌审查", "Word研报导出"]
+  },
+  "metrics_before": {
+    "daily_report_hours": 3.0,
+    "alert_response_minutes": 240,
+    "compliance_coverage_percent": 60
+  },
+  "metrics_after": {
+    "daily_report_hours": 0.8,
+    "alert_response_minutes": 3,
+    "compliance_coverage_percent": 100
+  },
+  "improvements": {
+    "report_time_reduction_percent": 73,
+    "alert_speedup_factor": 80,
+    "compliance_pass_rate_percent": 100
+  },
+  "testimonial": "FinAgent Pro 将我们的晨报撰写从3小时压缩到不到1小时，合规审查全自动通过，思维链可视化让我们敢把AI分析写进实验报告。",
+  "testimonial_role": "实验室研究负责人",
+  "status": "completed"
+}

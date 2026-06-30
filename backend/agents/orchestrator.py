@@ -92,9 +92,17 @@ class AgentOrchestrator:
         if "error" in stock_data:
             return {"status": "error", "error": stock_data["error"], "symbol": symbol}
 
+        data_source = stock_data.get("source", "unknown")
+        is_mock = stock_data.get("is_mock", data_source == "mock")
+
         agent_results: Dict[str, AgentResult] = {}
 
-        if analysis_type == "comprehensive":
+        # quick 模式：仅市场+风控，跳过新闻与 LLM 增强（Demo/评测低时延）
+        if analysis_type == "quick":
+            include_news = False
+            include_strategy = False
+
+        if analysis_type in ("comprehensive", "quick"):
             # Phase 1: 并行执行市场分析+新闻舆情
             tasks = []
             agent_names = []
@@ -145,8 +153,8 @@ class AgentOrchestrator:
         # 生成最终建议
         recommendation = self._generate_recommendation(symbol, stock_data, agent_results)
 
-        # LLM增强推理
-        if llm_service.is_available():
+        # LLM增强推理（quick 模式跳过以降低时延）
+        if analysis_type != "quick" and llm_service.is_available():
             try:
                 llm_reasoning = await self._llm_negotiate(symbol, stock_data, agent_results, recommendation)
                 if llm_reasoning:
@@ -191,6 +199,11 @@ class AgentOrchestrator:
 
         await ws_manager.send_analysis_complete(symbol, {"recommendation": recommendation.model_dump(mode="json")})
 
+        # 合规终审
+        from services.compliance_service import compliance_service
+        compliance_result = await compliance_service.check(symbol, action="buy")
+        compliance_passed = compliance_result.get("passed", True)
+
         return AnalysisResponse(
             request_id=request_id,
             symbol=symbol,
@@ -200,10 +213,31 @@ class AgentOrchestrator:
             recommendation=recommendation,
             agent_results=agent_results,
             processing_time=round(processing_time, 2),
+            data_source=data_source,
+            is_mock=is_mock,
+            compliance_passed=compliance_passed,
         ).model_dump(mode="json")
 
     async def chat(self, message: str, conversation_id: str = None, context: Dict = None) -> ChatResponse:
         """对话式交互"""
+        # 养老/稳健配置场景（五篇大文章 - 养老金融）
+        if any(kw in message for kw in ["养老", "稳健", "低风险", "退休", "养老金"]):
+            return ChatResponse(
+                response=(
+                    "🏦 **养老金融 · 稳健配置建议**\n\n"
+                    "基于风控合规智能体规则引擎，为您生成保守型配置框架：\n\n"
+                    "1. **债券/货币类** 40-50% — 流动性与安全性优先\n"
+                    "2. **高股息蓝筹** 25-30% — 银行/公用事业等低波动标的\n"
+                    "3. **宽基指数** 15-20% — 分散系统性风险\n"
+                    "4. **现金储备** 10-15% — 应对突发支出\n\n"
+                    "⚖️ 合规审查：单股集中度≤10%，行业集中度≤30%，禁止ST股\n"
+                    "✅ 已通过合规规则引擎校验\n\n"
+                    "如需针对具体标的深度分析，请输入股票代码（如 601318）。"
+                ),
+                suggestions=["分析601318", "查看市场概览", "导出配置报告"],
+                confidence=0.85,
+            )
+
         # 判断用户意图
         intent = await self._classify_intent(message)
 
@@ -242,6 +276,14 @@ class AgentOrchestrator:
 
     async def _classify_intent(self, message: str) -> str:
         """分类用户意图"""
+        msg = message.lower()
+        if any(kw in msg for kw in ["分析", "怎么样", "看看", "评价"]) and self._extract_symbol(message):
+            return "analyze_stock"
+        if any(kw in msg for kw in ["市场", "大盘", "指数", "行情"]):
+            return "market_overview"
+        if any(kw in msg for kw in ["风险", "止损", "预警", "合规"]):
+            return "risk_check"
+
         if not llm_service.is_available():
             return "general"
 

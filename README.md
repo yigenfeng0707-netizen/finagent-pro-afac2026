@@ -73,8 +73,15 @@ npm run dev
 ### Docker部署
 
 ```bash
+# 开发环境
 docker-compose up -d
+
+# 生产环境（阿里云 ECS 推荐）
+cp .env.production.example .env
+./deploy/aliyun/deploy.sh
 ```
+
+详见 [`docs/AliyunDeployGuide.md`](docs/AliyunDeployGuide.md)
 
 ## API文档
 
@@ -99,6 +106,10 @@ docker-compose up -d
 | `/api/export/analysis` | POST | 导出分析Word |
 | `/api/export/report` | POST | 导出报告Word |
 | `/api/export/chat` | POST | 导出对话Word |
+| `/api/cases/pilot` | GET | 试点案例数据 |
+| `/api/benchmark/summary` | GET | Benchmark摘要 |
+| `/api/stats/dashboard` | GET | 工作台统计 |
+| `/api/app-config` | GET | Demo模式等配置 |
 
 ## 技术栈
 
@@ -135,7 +146,7 @@ FinAgent-Pro/
 ├── frontend/
 │   ├── src/
 │   │   ├── components/   # Vue组件
-│   │   ├── views/        # 页面视图(Login.vue, Pricing.vue等)
+│   │   ├── views/        # 页面视图(Cases.vue, AuditLog.vue等)
 │   │   ├── stores/       # Pinia状态管理(user.js等)
 │   │   └── api.js        # API封装
 │   └── package.json

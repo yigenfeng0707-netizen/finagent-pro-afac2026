@@ -19,10 +19,13 @@ env/
 *.swp
 *.swo
 
-# Environment
+# Environment & Secrets
 .env
 .env.local
 .env.production
+.env.production.local
+*.pem
+*RAM用户*.csv
 
 # Database
 *.db

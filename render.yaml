@@ -61,6 +61,8 @@ services:
         sync: false
       # ===== 应用配置 =====
       - key: DEBUG
+        value: "false"
+      - key: DEMO_MODE
         value: "true"
       - key: SECRET_KEY
         sync: false

@@ -49,8 +49,9 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 
 # Application
 APP_NAME = os.getenv("APP_NAME", "FinAgent Pro")
-APP_VERSION = "1.0.0"
+APP_VERSION = "2.0.0"
 DEBUG = os.getenv("DEBUG", "true").lower() == "true"
+DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
 SECRET_KEY = os.getenv("SECRET_KEY", "") or os.urandom(32).hex()
 JWT_SECRET = os.getenv("JWT_SECRET", SECRET_KEY)
 FREE_USAGE_LIMIT = int(os.getenv("FREE_USAGE_LIMIT", "1"))

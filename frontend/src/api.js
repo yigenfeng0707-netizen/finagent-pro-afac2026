@@ -109,4 +109,10 @@ export const exportChat = (data) => api.post('/export/chat', data, { responseTyp
 // 合规审计
 export const getAuditLog = (limit = 50) => api.get('/audit/log', { params: { limit } })
 
+// 竞赛相关
+export const getAppConfig = () => api.get('/app-config')
+export const getPilotCase = () => api.get('/cases/pilot')
+export const getBenchmarkSummary = () => api.get('/benchmark/summary')
+export const getDashboardStats = () => api.get('/stats/dashboard')
+
 export default api

@@ -9,7 +9,10 @@
       <div v-if="!messages.length" class="text-center text-dark-500 py-12">
         <div class="text-4xl mb-3">🤖</div>
         <p>你好！我是FinAgent Pro数字员工，可以帮你分析股票、查看行情、管理风险。</p>
-        <p class="text-sm mt-2">试试说："分析一下贵州茅台"</p>
+        <p class="text-sm mt-2">试试说："分析一下贵州茅台" 或点击快捷场景</p>
+        <div class="flex flex-wrap gap-2 justify-center mt-4">
+          <button v-for="q in quickPrompts" :key="q" @click="inputText = q" class="text-xs px-3 py-1.5 rounded-full bg-dark-800 text-dark-300 hover:bg-primary-600/20 hover:text-primary-400">{{ q }}</button>
+        </div>
       </div>
       <div v-for="(msg, i) in messages" :key="i" :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
         <div :class="msg.role === 'user' ? 'bg-primary-600 text-white rounded-xl rounded-br-sm' : 'bg-dark-800 text-dark-100 rounded-xl rounded-bl-sm'" class="max-w-2xl px-4 py-3">
@@ -47,6 +50,8 @@ const chatStore = useChatStore()
 const userStore = useUserStore()
 const router = useRouter()
 const inputText = ref('')
+const isExporting = ref(false)
+const quickPrompts = ['分析一下600519', '帮我做养老稳健配置', '比亚迪最近怎么样']
 const messages = computed(() => chatStore.messages)
 const isLoading = computed(() => chatStore.isLoading)
 

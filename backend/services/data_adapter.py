@@ -11,7 +11,7 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 
-from config import USE_REAL_DATA, AKSHARE_ENABLED, YFINANCE_ENABLED, FINNHUB_API_KEY
+from config import USE_REAL_DATA, AKSHARE_ENABLED, YFINANCE_ENABLED, FINNHUB_API_KEY, DEMO_MODE
 
 logger = logging.getLogger(__name__)
 
@@ -77,9 +77,23 @@ class DataAdapter:
             elif not is_a_share and YFINANCE_ENABLED and _YF_AVAILABLE:
                 result = await self._get_overseas_quote(symbol)
 
-        # 降级到Mock
+        # 降级到Mock（Demo模式禁止Mock，必须返回真实数据或错误）
         if result is None:
-            result = self._mock_stock_data(symbol)
+            if DEMO_MODE:
+                result = {
+                    "symbol": symbol,
+                    "name": symbol,
+                    "current_price": 0,
+                    "change": 0,
+                    "change_percent": 0,
+                    "volume": 0,
+                    "source": "error",
+                    "is_mock": False,
+                    "error": "Demo模式：无法获取真实行情数据，请检查网络或数据源配置",
+                    "updated_at": datetime.now().isoformat(),
+                }
+            else:
+                result = self._mock_stock_data(symbol)
 
         self._set_cache(f"quote_{symbol}", result)
         return result
@@ -109,6 +123,8 @@ class DataAdapter:
                 "pb_ratio": float(r.get('市净率', 0)) if pd.notna(r.get('市净率')) else None,
                 "turnover_rate": float(r.get('换手率', 0)) if pd.notna(r.get('换手率')) else None,
                 "source": "akshare",
+                "is_mock": False,
+                "updated_at": datetime.now().isoformat(),
             }
         except Exception as e:
             logger.warning(f"AKShare获取A股行情失败[{symbol}]: {e}")
@@ -367,6 +383,8 @@ class DataAdapter:
             "beta": round(np.random.uniform(0.5, 1.8), 2),
             "sector": "金融",
             "source": "mock",
+            "is_mock": True,
+            "updated_at": datetime.now().isoformat(),
         }
 
     def _mock_historical_data(self) -> pd.DataFrame:
